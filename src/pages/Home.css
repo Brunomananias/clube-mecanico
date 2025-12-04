@@ -1,0 +1,661 @@
+/* Home.css */
+
+/* Reset e estilos globais */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+/* Navbar */
+.nav-logo {
+  display: flex;
+  align-items: center;
+  flex-grow: 1;
+}
+
+.logo-text {
+  font-family: 'monospace', monospace;
+  font-weight: 700;
+  letter-spacing: 0.3rem;
+  color: inherit;
+  text-decoration: none;
+}
+
+@media (max-width: 899px) {
+  .logo-text {
+    display: none !important;
+  }
+}
+
+.nav-links {
+  display: flex;
+  gap: 24px;
+  align-items: center;
+}
+
+.nav-link {
+  position: relative;
+  text-decoration: none;
+}
+
+.nav-link::after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background-color: currentColor;
+  transition: width 0.3s ease;
+}
+
+.nav-link:hover::after {
+  width: 100%;
+}
+
+.nav-button {
+  transition: all 0.3s ease;
+}
+
+.nav-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+/* Hero Section */
+.hero-section {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 80px 0;
+  position: relative;
+  overflow: hidden;
+}
+
+.hero-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 40px;
+  align-items: center;
+}
+
+.hero-content {
+  flex: 1;
+  min-width: 300px;
+}
+
+.hero-title {
+  font-size: clamp(2rem, 5vw, 3rem);
+  margin-bottom: 20px;
+}
+
+.hero-subtitle {
+  font-size: clamp(1.2rem, 3vw, 1.5rem);
+  margin-bottom: 24px;
+  opacity: 0.9;
+}
+
+.hero-description {
+  font-size: 1.1rem;
+  margin-bottom: 32px;
+  line-height: 1.6;
+}
+
+.hero-buttons {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.hero-button, .hero-button-outline {
+  padding: 12px 32px !important;
+  border-radius: 8px !important;
+  font-weight: 600 !important;
+  transition: all 0.3s ease !important;
+}
+
+.hero-button-outline {
+  border-width: 2px !important;
+}
+
+.hero-button:hover, .hero-button-outline:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+}
+
+.hero-image {
+  flex: 1;
+  min-width: 300px;
+}
+
+.image-wrapper {
+  position: relative;
+  text-align: center;
+}
+
+.hero-logo {
+  max-width: 100%;
+  border-radius: 16px;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+  filter: brightness(1.05);
+}
+
+.hero-tagline {
+  margin-top: 24px;
+  font-weight: bold;
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+}
+
+/* Seção Sobre */
+.section-title {
+  text-align: center;
+  margin-bottom: 16px !important;
+}
+
+.section-subtitle {
+  text-align: center;
+  color: #666;
+  max-width: 800px;
+  margin: 0 auto 48px auto !important;
+}
+
+.sobre-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 48px;
+  align-items: center;
+}
+
+.sobre-imagem {
+  flex: 1;
+  min-width: 300px;
+}
+
+.sobre-img {
+  width: 100%;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+}
+
+.sobre-conteudo {
+  flex: 1;
+  min-width: 300px;
+}
+
+.sobre-conteudo p {
+  font-size: 1.1rem;
+  line-height: 1.8;
+  margin-bottom: 20px;
+}
+
+.diferenciais {
+  margin-top: 32px;
+}
+
+.diferenciais h6 {
+  margin-bottom: 16px !important;
+}
+
+.diferenciais-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 16px;
+}
+
+.diferencial-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.estatisticas {
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+  margin-top: 32px;
+}
+
+.estatistica {
+  text-align: center;
+  flex: 1;
+  min-width: 100px;
+}
+
+/* Seção Cursos */
+.cursos-section {
+  padding: 64px 0;
+  background-color: rgba(25, 118, 210, 0.05);
+}
+
+.cursos-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 32px;
+  margin: 0 auto;
+}
+
+.curso-card-wrapper {
+  display: flex;
+}
+
+.curso-card {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  transition: all 0.3s ease;
+  border-radius: 12px !important;
+  overflow: hidden;
+}
+
+.curso-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 12px 20px rgba(0,0,0,0.15) !important;
+}
+
+.curso-header {
+  padding: 24px;
+  color: white;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.curso-titulo {
+  margin-top: 8px !important;
+}
+
+.curso-conteudo {
+  flex-grow: 1;
+  padding: 24px !important;
+}
+
+.curso-descricao {
+  line-height: 1.6;
+  margin-bottom: 20px !important;
+}
+
+.curso-tags {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.curso-rodape {
+  padding: 16px 24px 24px 24px;
+}
+
+.curso-botao {
+  transition: all 0.3s ease !important;
+}
+
+.curso-botao:hover {
+  opacity: 0.9 !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
+}
+
+.cursos-rodape {
+  text-align: center;
+  margin-top: 48px;
+}
+
+.botao-todos-cursos {
+  padding: 12px 48px !important;
+  border-radius: 8px !important;
+}
+
+/* Seção Call to Action */
+.cta-paper {
+  padding: 64px !important;
+  border-radius: 16px !important;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+  color: white !important;
+  text-align: center !important;
+}
+
+@media (max-width: 599px) {
+  .cta-paper {
+    padding: 32px !important;
+  }
+}
+
+.cta-icone {
+  font-size: 60px !important;
+  margin-bottom: 24px !important;
+}
+
+.cta-titulo {
+  margin-bottom: 16px !important;
+  font-size: clamp(1.5rem, 4vw, 2.5rem) !important;
+}
+
+.cta-subtitulo {
+  margin-bottom: 32px !important;
+  opacity: 0.9;
+}
+
+.cta-botao {
+  padding: 12px 48px !important;
+  border-radius: 8px !important;
+  font-size: 1.1rem !important;
+  font-weight: bold !important;
+  transition: all 0.3s ease !important;
+}
+
+.cta-botao:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(0,0,0,0.2) !important;
+}
+
+/* Footer */
+.footer {
+  background-color: #1a237e;
+  color: white;
+  padding: 64px 0;
+}
+
+.footer-conteudo {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 48px;
+}
+
+.footer-coluna {
+  flex: 1;
+  min-width: 250px;
+}
+
+.footer-logo {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.footer-icone-logo {
+  font-size: 32px !important;
+}
+
+.footer-titulo {
+  font-family: 'monospace', monospace;
+  letter-spacing: 0.1rem;
+}
+
+.footer-descricao {
+  opacity: 0.8;
+  line-height: 1.6;
+  margin-bottom: 24px;
+}
+
+.footer-redes-sociais {
+  display: flex;
+  gap: 16px;
+}
+
+.rede-social {
+  transition: all 0.3s ease;
+}
+
+.rede-social:hover {
+  transform: translateY(-3px);
+  background-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+.footer-coluna-titulo {
+  margin-bottom: 24px !important;
+}
+
+.footer-contatos {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.footer-contato {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.contato-icone {
+  font-size: 18px !important;
+  opacity: 0.8;
+}
+
+.contato-endereco {
+  line-height: 1.6;
+}
+
+.footer-horarios, .footer-aulas {
+  line-height: 1.8;
+}
+
+.footer-aulas {
+  margin-top: 12px;
+}
+
+.footer-divisor {
+  background-color: rgba(255, 255, 255, 0.2) !important;
+  margin: 40px 0 !important;
+}
+
+.footer-copyright {
+  opacity: 0.7;
+  text-align: center;
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+  .hero-container {
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .hero-buttons {
+    justify-content: center;
+  }
+  
+  .sobre-container {
+    flex-direction: column;
+  }
+  
+  .cursos-grid {
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  }
+  
+  .footer-conteudo {
+    gap: 32px;
+  }
+}
+
+@media (max-width: 480px) {
+  .hero-buttons {
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .hero-button, .hero-button-outline {
+    width: 100%;
+    max-width: 300px;
+  }
+  
+  .cursos-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .estatisticas {
+    justify-content: center;
+  }
+  
+  .estatistica {
+    min-width: 80px;
+  }
+}
+
+/* Animações adicionais */
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.floating {
+  animation: float 3s ease-in-out infinite;
+}
+
+/* Efeitos de hover */
+.hover-lift {
+  transition: transform 0.3s ease;
+}
+
+.hover-lift:hover {
+  transform: translateY(-4px);
+}
+
+/* Gradientes personalizados */
+.gradient-text {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Utilitários */
+.text-center {
+  text-align: center !important;
+}
+
+.mt-4 {
+  margin-top: 32px !important;
+}
+
+.mb-4 {
+  margin-bottom: 32px !important;
+}
+
+.p-4 {
+  padding: 32px !important;
+}
+
+/* Estilos para a seção sobre bicicletas */
+.beneficio-box {
+  background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%);
+  border-left: 4px solid #1976d2;
+}
+
+/* Estatísticas com ícones de bike */
+.estatistica-bike {
+  position: relative;
+  padding: 20px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  text-align: center;
+  transition: transform 0.3s ease;
+}
+
+.estatistica-bike:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+}
+
+.estatistica-bike::before {
+  content: '🚴';
+  position: absolute;
+  top: -15px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 24px;
+  background: white;
+  padding: 5px 10px;
+  border-radius: 50%;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+/* Cards de missão, visão e valores */
+.valor-card {
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.valor-card:hover {
+  transform: translateY(-8px) rotate(1deg);
+  box-shadow: 0 12px 25px rgba(0,0,0,0.15) !important;
+}
+
+/* Responsividade adicional */
+@media (max-width: 768px) {
+  .estatisticas {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+  }
+  
+  .valor-card {
+    min-width: 100%;
+  }
+}
+
+/* Animações específicas para bike */
+@keyframes pedal {
+  0%, 100% { transform: rotate(0deg); }
+  50% { transform: rotate(180deg); }
+}
+
+.bike-animation {
+  display: inline-block;
+  animation: pedal 2s ease-in-out infinite;
+}
+
+/* Destaque para textos importantes */
+.destaque-bike {
+  background: linear-gradient(90deg, #1976d2, #2196f3);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-weight: bold;
+}
+
+/* Linha do tempo da empresa */
+.timeline {
+  position: relative;
+  margin: 40px 0;
+  padding-left: 30px;
+}
+
+.timeline::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: linear-gradient(to bottom, #1976d2, #4caf50);
+  border-radius: 3px;
+}
+
+.timeline-item {
+  position: relative;
+  margin-bottom: 30px;
+  padding-left: 20px;
+}
+
+.timeline-item::before {
+  content: '🚲';
+  position: absolute;
+  left: -40px;
+  top: 0;
+  font-size: 20px;
+  background: white;
+  border-radius: 50%;
+  padding: 5px;
+  box-shadow: 0 0 0 3px #1976d2;
+}
