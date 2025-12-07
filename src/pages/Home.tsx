@@ -154,6 +154,13 @@ const Home: React.FC = () => {
                 >
                   Matricule-se
                 </Button>
+                <Button
+                color="inherit"
+                href="/login"
+                className="nav-link"
+                >
+                Login
+                </Button>
               </div>
             ) : (
               <IconButton color="inherit">
