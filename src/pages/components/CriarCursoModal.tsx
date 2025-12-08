@@ -73,7 +73,7 @@ const CriarCursoModal: React.FC<CreateCourseModalProps> = ({ open, onClose, onCo
     if (error) setError(null);
   };
 
-  const handleSwitchChange = (e: React.ChangeChange<HTMLInputElement>) => {
+  const handleSwitchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData(prev => ({ ...prev, [e.target.name]: e.target.checked }));
   };
 

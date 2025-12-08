@@ -12,16 +12,12 @@ import {
   Divider,
   useTheme,
   useMediaQuery,
-  Badge,
 } from '@mui/material';
 import {
-  Menu as MenuIcon,
-  Notifications as NotificationsIcon,
   Person as PersonIcon,
   Settings as SettingsIcon,
   ExitToApp as ExitToAppIcon,
   Dashboard as DashboardIcon,
-  School as SchoolIcon,
   Build as BuildIcon,
   Home as HomeIcon,
 } from '@mui/icons-material';
@@ -35,12 +31,10 @@ interface NavbarProps {
 
 const Navbar: React.FC<NavbarProps> = ({ userType, userName, userEmail }) => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const [notificationsAnchorEl, setNotificationsAnchorEl] = useState<null | HTMLElement>(null);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const navigate = useNavigate();
   const location = useLocation();
-
   const isActive = (path: string) => location.pathname === path;
 
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
@@ -49,14 +43,6 @@ const Navbar: React.FC<NavbarProps> = ({ userType, userName, userEmail }) => {
 
   const handleMenuClose = () => {
     setAnchorEl(null);
-  };
-
-  const handleNotificationsOpen = (event: React.MouseEvent<HTMLElement>) => {
-    setNotificationsAnchorEl(event.currentTarget);
-  };
-
-  const handleNotificationsClose = () => {
-    setNotificationsAnchorEl(null);
   };
 
   const handleLogout = () => {
@@ -70,15 +56,9 @@ const Navbar: React.FC<NavbarProps> = ({ userType, userName, userEmail }) => {
   const navItems = userType === 'admin' 
     ? [
         { label: 'Dashboard', path: '/admin/dashboard', icon: <DashboardIcon /> },
-        { label: 'Alunos', path: '/admin/alunos', icon: <SchoolIcon /> },
-        { label: 'Cursos', path: '/admin/cursos', icon: <BuildIcon /> },
-        { label: 'Relatórios', path: '/admin/relatorios', icon: <DashboardIcon /> },
       ]
     : [
         { label: 'Dashboard', path: '/aluno/dashboard', icon: <DashboardIcon /> },
-        { label: 'Meus Cursos', path: '/aluno/cursos', icon: <SchoolIcon /> },
-        { label: 'Certificados', path: '/aluno/certificados', icon: <BuildIcon /> },
-        { label: 'Mensagens', path: '/aluno/mensagens', icon: <NotificationsIcon /> },
       ];
 
   return (
@@ -137,25 +117,6 @@ const Navbar: React.FC<NavbarProps> = ({ userType, userName, userEmail }) => {
 
         {/* Ícones de ação */}
         <Box sx={{ display: 'flex', alignItems: 'center', ml: 2 }}>
-          {/* Notificações */}
-          <IconButton color="inherit" onClick={handleNotificationsOpen}>
-            <Badge badgeContent={3} color="error">
-              <NotificationsIcon />
-            </Badge>
-          </IconButton>
-
-          {/* Menu hamburguer para mobile */}
-          {isMobile && (
-            <IconButton
-              color="inherit"
-              onClick={handleMenuOpen}
-              sx={{ ml: 1 }}
-            >
-              <MenuIcon />
-            </IconButton>
-          )}
-
-          {/* Perfil do usuário para desktop */}
           {!isMobile && (
             <Box sx={{ display: 'flex', alignItems: 'center', ml: 2 }}>
               <Avatar
@@ -267,62 +228,6 @@ const Navbar: React.FC<NavbarProps> = ({ userType, userName, userEmail }) => {
               <ExitToAppIcon fontSize="small" />
               Sair
             </Box>
-          </MenuItem>
-        </Menu>
-
-        {/* Menu de notificações */}
-        <Menu
-          anchorEl={notificationsAnchorEl}
-          open={Boolean(notificationsAnchorEl)}
-          onClose={handleNotificationsClose}
-          PaperProps={{
-            sx: {
-              mt: 1.5,
-              minWidth: 300,
-            },
-          }}
-        >
-          <MenuItem disabled>
-            <Typography variant="subtitle2" fontWeight="bold">
-              Notificações (3)
-            </Typography>
-          </MenuItem>
-          <Divider />
-          <MenuItem onClick={handleNotificationsClose}>
-            <Box>
-              <Typography variant="body2" fontWeight="bold">
-                Nova aula disponível
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
-                Mecânica Avançada - Aula 5
-              </Typography>
-            </Box>
-          </MenuItem>
-          <MenuItem onClick={handleNotificationsClose}>
-            <Box>
-              <Typography variant="body2" fontWeight="bold">
-                Certificado disponível
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
-                Curso Básico concluído
-              </Typography>
-            </Box>
-          </MenuItem>
-          <MenuItem onClick={handleNotificationsClose}>
-            <Box>
-              <Typography variant="body2" fontWeight="bold">
-                Mensagem do professor
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
-                Verifique suas tarefas
-              </Typography>
-            </Box>
-          </MenuItem>
-          <Divider />
-          <MenuItem onClick={handleNotificationsClose} sx={{ justifyContent: 'center' }}>
-            <Typography variant="caption" color="primary">
-              Ver todas as notificações
-            </Typography>
           </MenuItem>
         </Menu>
       </Toolbar>

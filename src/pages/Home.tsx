@@ -15,6 +15,9 @@ import {
   Stack,
   Divider,
   Paper,
+  Avatar,
+  Menu,
+  MenuItem,
 } from "@mui/material";
 import { motion } from "framer-motion";
 import MenuIcon from "@mui/icons-material/Menu";
@@ -32,12 +35,43 @@ import YouTubeIcon from "@mui/icons-material/YouTube";
 import EmailIcon from "@mui/icons-material/Email";
 import PhoneIcon from "@mui/icons-material/Phone";
 import LocationOnIcon from "@mui/icons-material/LocationOn";
+import PersonIcon from "@mui/icons-material/Person";
+import ExitToAppIcon from "@mui/icons-material/ExitToApp";
+import DashboardIcon from "@mui/icons-material/Dashboard";
+import ShoppingCartIcon from "@mui/icons-material/ShoppingCart";
 import "./Home.css";
 import logo from "../assets/logo.png";
+import { useNavigate } from "react-router-dom";
 
 const Home: React.FC = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
+  const navigate = useNavigate();
+  
+  // Verificar se o usuário está logado
+  const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
+  const userType = localStorage.getItem('userType') || '';
+  const userEmail = localStorage.getItem('userEmail') || '';
+  
+  // Estado para o menu do usuário
+  const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
+  const open = Boolean(anchorEl);
+
+  const handleMenuClick = (event: React.MouseEvent<HTMLElement>) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('isLoggedIn');
+    localStorage.removeItem('userType');
+    localStorage.removeItem('userEmail');
+    handleMenuClose();
+    window.location.reload(); // Recarregar para atualizar o estado
+  };
 
   const cursos = [
     {
@@ -103,73 +137,270 @@ const Home: React.FC = () => {
   ];
 
   const beneficios = [
-  "Única escola especializada apenas em bicicletas",
-  "Certificação reconhecida pela ABRACICLO",
-  "Laboratório com bikes das melhores marcas",
-  "Metodologia 70% prática, 30% teoria",
-  "Parceria com 50+ bicicletarias para estágio",
-  "Aulas presenciais e online ao vivo",
-  "Kit de ferramentas profissional incluso",
-  "Mentoria para abrir sua própria oficina"
-];
+    "Única escola especializada apenas em bicicletas",
+    "Certificação reconhecida pela ABRACICLO",
+    "Laboratório com bikes das melhores marcas",
+    "Metodologia 70% prática, 30% teoria",
+    "Parceria com 50+ bicicletarias para estágio",
+    "Aulas presenciais e online ao vivo",
+    "Kit de ferramentas profissional incluso",
+    "Mentoria para abrir sua própria oficina"
+  ];
+
+  // Navbar para usuário logado
+  const renderLoggedInNavbar = () => (
+    <AppBar position="fixed" color="primary" elevation={3}>
+      <Container maxWidth="xl">
+        <Toolbar disableGutters>
+          <div className="nav-logo">
+            <BuildIcon sx={{ mr: 2, fontSize: 32 }} />
+            <Typography
+              variant="h6"
+              noWrap
+              component="a"
+              href="/"
+              className="logo-text"
+              sx={{ cursor: 'pointer' }}
+              onClick={(e) => {
+                e.preventDefault();
+                navigate('/');
+              }}
+            >
+              CLUBE DO MECÂNICO
+            </Typography>
+          </div>
+
+          {!isMobile ? (
+            <div className="nav-links">
+              <Button 
+                color="inherit" 
+                className="nav-link"
+                onClick={() => {
+                  const element = document.getElementById('inicio');
+                  if (element) element.scrollIntoView({ behavior: 'smooth' });
+                }}
+              >
+                Início
+              </Button>
+              <Button 
+                color="inherit" 
+                className="nav-link"
+                onClick={() => {
+                  const element = document.getElementById('sobre');
+                  if (element) element.scrollIntoView({ behavior: 'smooth' });
+                }}
+              >
+                Sobre
+              </Button>
+              <Button 
+                color="inherit" 
+                className="nav-link"
+                onClick={() => {
+                  const element = document.getElementById('cursos');
+                  if (element) element.scrollIntoView({ behavior: 'smooth' });
+                }}
+              >
+                Cursos
+              </Button>
+              <Button 
+                color="inherit" 
+                className="nav-link"
+                onClick={() => {
+                  const element = document.getElementById('contato');
+                  if (element) element.scrollIntoView({ behavior: 'smooth' });
+                }}
+              >
+                Contato
+              </Button>
+              
+              <Button
+                color="inherit"
+                className="nav-link"
+                startIcon={<ShoppingCartIcon />}
+                onClick={() => navigate('/carrinho')}
+              >
+                Carrinho
+              </Button>
+              
+              <Button
+                variant="contained"
+                color="secondary"
+                className="nav-button"
+                startIcon={<DashboardIcon />}
+                onClick={() => navigate(userType === 'admin' ? '/admin/dashboard' : '/aluno/dashboard')}
+              >
+                Meu Dashboard
+              </Button>
+
+              {/* Menu do usuário */}
+              <IconButton
+                onClick={handleMenuClick}
+                size="small"
+                sx={{ ml: 2 }}
+                aria-controls={open ? 'account-menu' : undefined}
+                aria-haspopup="true"
+                aria-expanded={open ? 'true' : undefined}
+              >
+                <Avatar sx={{ width: 32, height: 32, bgcolor: 'secondary.main' }}>
+                  <PersonIcon />
+                </Avatar>
+              </IconButton>
+              
+              <Menu
+                anchorEl={anchorEl}
+                id="account-menu"
+                open={open}
+                onClose={handleMenuClose}
+                onClick={handleMenuClose}
+                PaperProps={{
+                  elevation: 3,
+                  sx: {
+                    overflow: 'visible',
+                    filter: 'drop-shadow(0px 2px 8px rgba(0,0,0,0.32))',
+                    mt: 1.5,
+                    '& .MuiAvatar-root': {
+                      width: 32,
+                      height: 32,
+                      ml: -0.5,
+                      mr: 1,
+                    },
+                  },
+                }}
+                transformOrigin={{ horizontal: 'right', vertical: 'top' }}
+                anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+              >
+                <MenuItem disabled>
+                  <Typography variant="body2" color="text.secondary">
+                    {userEmail}
+                  </Typography>
+                </MenuItem>
+                <Divider />
+                <MenuItem onClick={() => navigate('/carrinho')}>
+                  <ShoppingCartIcon fontSize="small" sx={{ mr: 2 }} />
+                  Meu Carrinho
+                </MenuItem>
+                <MenuItem onClick={() => navigate('/cursos')}>
+                  <SchoolIcon fontSize="small" sx={{ mr: 2 }} />
+                  Meus Cursos
+                </MenuItem>
+                <MenuItem onClick={() => navigate(userType === 'admin' ? '/admin/dashboard' : '/aluno/dashboard')}>
+                  <DashboardIcon fontSize="small" sx={{ mr: 2 }} />
+                  Dashboard
+                </MenuItem>
+                <Divider />
+                <MenuItem onClick={handleLogout}>
+                  <ExitToAppIcon fontSize="small" sx={{ mr: 2 }} />
+                  Sair
+                </MenuItem>
+              </Menu>
+            </div>
+          ) : (
+            <IconButton color="inherit">
+              <MenuIcon />
+            </IconButton>
+          )}
+        </Toolbar>
+      </Container>
+    </AppBar>
+  );
+
+  // Navbar para visitante
+  const renderVisitorNavbar = () => (
+    <AppBar position="fixed" color="primary" elevation={3}>
+      <Container maxWidth="xl">
+        <Toolbar disableGutters>
+          <div className="nav-logo">
+            <BuildIcon sx={{ mr: 2, fontSize: 32 }} />
+            <Typography
+              variant="h6"
+              noWrap
+              component="a"
+              href="/"
+              className="logo-text"
+              sx={{ cursor: 'pointer' }}
+              onClick={(e) => {
+                e.preventDefault();
+                navigate('/');
+              }}
+            >
+              CLUBE DO MECÂNICO
+            </Typography>
+          </div>
+
+          {!isMobile ? (
+            <div className="nav-links">
+              <Button 
+                color="inherit" 
+                className="nav-link"
+                onClick={() => {
+                  const element = document.getElementById('inicio');
+                  if (element) element.scrollIntoView({ behavior: 'smooth' });
+                }}
+              >
+                Início
+              </Button>
+              <Button 
+                color="inherit" 
+                className="nav-link"
+                onClick={() => {
+                  const element = document.getElementById('sobre');
+                  if (element) element.scrollIntoView({ behavior: 'smooth' });
+                }}
+              >
+                Sobre
+              </Button>
+              <Button 
+                color="inherit" 
+                className="nav-link"
+                onClick={() => {
+                  const element = document.getElementById('cursos');
+                  if (element) element.scrollIntoView({ behavior: 'smooth' });
+                }}
+              >
+                Cursos
+              </Button>
+              <Button 
+                color="inherit" 
+                className="nav-link"
+                onClick={() => {
+                  const element = document.getElementById('contato');
+                  if (element) element.scrollIntoView({ behavior: 'smooth' });
+                }}
+              >
+                Contato
+              </Button>
+              
+              <Button
+                variant="contained"
+                color="secondary"
+                className="nav-button"
+                onClick={() => navigate("/cadastrar")}
+              >
+                Matricule-se
+              </Button>
+              
+              <Button
+                color="inherit"
+                className="nav-link"
+                onClick={() => navigate("/login")}
+              >
+                Login
+              </Button>
+            </div>
+          ) : (
+            <IconButton color="inherit">
+              <MenuIcon />
+            </IconButton>
+          )}
+        </Toolbar>
+      </Container>
+    </AppBar>
+  );
 
   return (
     <>
-      {/* Navbar Superior */}
-      <AppBar position="fixed" color="primary" elevation={3}>
-        <Container maxWidth="xl">
-          <Toolbar disableGutters>
-            <div className="nav-logo">
-              <BuildIcon sx={{ mr: 2, fontSize: 32 }} />
-              <Typography
-                variant="h6"
-                noWrap
-                component="a"
-                href="/"
-                className="logo-text"
-              >
-                CLUBE DO MECÂNICO
-              </Typography>
-            </div>
-
-            {!isMobile ? (
-              <div className="nav-links">
-                <Button color="inherit" href="#inicio" className="nav-link">
-                  Início
-                </Button>
-                <Button color="inherit" href="#sobre" className="nav-link">
-                  Sobre
-                </Button>
-                <Button color="inherit" href="#cursos" className="nav-link">
-                  Cursos
-                </Button>
-                <Button color="inherit" href="#contato" className="nav-link">
-                  Contato
-                </Button>
-                <Button
-                  variant="contained"
-                  color="secondary"
-                  href="#inscricao"
-                  className="nav-button"
-                >
-                  Matricule-se
-                </Button>
-                <Button
-                color="inherit"
-                href="/login"
-                className="nav-link"
-                >
-                Login
-                </Button>
-              </div>
-            ) : (
-              <IconButton color="inherit">
-                <MenuIcon />
-              </IconButton>
-            )}
-          </Toolbar>
-        </Container>
-      </AppBar>
+      {/* Navbar condicional */}
+      {isLoggedIn ? renderLoggedInNavbar() : renderVisitorNavbar()}
 
       {/* Espaço para a navbar fixa */}
       <Toolbar />
@@ -213,17 +444,31 @@ const Home: React.FC = () => {
                     color="secondary"
                     size="large"
                     className="hero-button"
+                    onClick={() => navigate("/cursos")}
                   >
                     Ver Cursos
                   </Button>
-                  <Button
-                    variant="outlined"
-                    color="inherit"
-                    size="large"
-                    className="hero-button-outline"
-                  >
-                    Fale Conosco
-                  </Button>
+                  {isLoggedIn ? (
+                    <Button
+                      variant="outlined"
+                      color="inherit"
+                      size="large"
+                      className="hero-button-outline"
+                      onClick={() => navigate(userType === 'admin' ? '/admin/dashboard' : '/aluno/dashboard')}
+                    >
+                      Acessar Dashboard
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="outlined"
+                      color="inherit"
+                      size="large"
+                      className="hero-button-outline"
+                      onClick={() => navigate("/cadastrar")}
+                    >
+                      Começar Agora
+                    </Button>
+                  )}
                 </div>
               </motion.div>
             </div>
@@ -244,191 +489,230 @@ const Home: React.FC = () => {
               </motion.div>
             </div>
           </div>
+          
+          {/* Mensagem de boas-vindas para usuário logado */}
+          {isLoggedIn && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.5 }}
+            >
+              <Paper 
+                sx={{ 
+                  mt: 4, 
+                  p: 3, 
+                  bgcolor: 'primary.light',
+                  borderRadius: 2,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 2
+                }}
+              >
+                <CheckCircleIcon color="success" />
+                <Box>
+                  <Typography variant="h6" fontWeight="bold">
+                    Bem-vindo de volta, {userEmail}!
+                  </Typography>
+                  <Typography variant="body2">
+                    Continue sua jornada de aprendizado. Acesse seus cursos ou explore novas oportunidades.
+                  </Typography>
+                </Box>
+                <Box sx={{ flexGrow: 1 }} />
+                <Button
+                  variant="contained"
+                  size="small"
+                  onClick={() => navigate(userType === 'admin' ? '/admin/dashboard' : '/aluno/dashboard')}
+                >
+                  Ir para Dashboard
+                </Button>
+              </Paper>
+            </motion.div>
+          )}
         </Container>
       </section>
 
       {/* Seção Sobre a Empresa */}
-{/* Seção Sobre a Empresa */}
-<Container maxWidth="lg" sx={{ py: 8 }} id="sobre">
-  <motion.div
-    initial={{ opacity: 0 }}
-    whileInView={{ opacity: 1 }}
-    viewport={{ once: true }}
-  >
-    <Typography
-      variant="h3"
-      align="center"
-      fontWeight="bold"
-      gutterBottom
-      color="primary"
-      className="section-title"
-    >
-      Do Pedal ao Profissional
-    </Typography>
-    <Typography
-      variant="h6"
-      align="center"
-      color="text.secondary"
-      className="section-subtitle"
-    >
-      Especialistas em formar mecânicos de bicicletas
-    </Typography>
+      <Container maxWidth="lg" sx={{ py: 8 }} id="sobre">
+        <motion.div
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          viewport={{ once: true }}
+        >
+          <Typography
+            variant="h3"
+            align="center"
+            fontWeight="bold"
+            gutterBottom
+            color="primary"
+            className="section-title"
+          >
+            Do Pedal ao Profissional
+          </Typography>
+          <Typography
+            variant="h6"
+            align="center"
+            color="text.secondary"
+            className="section-subtitle"
+          >
+            Especialistas em formar mecânicos de bicicletas
+          </Typography>
 
-    {/* PRIMEIRA SEÇÃO - Foto ESQUERDA, Texto DIREITA */}
-    <div className="sobre-container sobre-container-reverse">
-      <div className="sobre-imagem">
-        <motion.div
-          initial={{ opacity: 0, x: -50 }}
-          whileInView={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.7 }}
-          viewport={{ once: true }}
-        >
-          <Box
-            component="img"
-            src="https://images.unsplash.com/photo-1532298229144-0ec0c57515c7?auto=format&fit=crop&w=600&h=400&q=80"
-            alt="Oficina de bicicletas"
-            className="sobre-img"
-          />
-        </motion.div>
-      </div>
-      <div className="sobre-conteudo">
-        <motion.div
-          initial={{ opacity: 0, x: 50 }}
-          whileInView={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.7, delay: 0.2 }}
-          viewport={{ once: true }}
-        >
-          <Typography variant="h5" fontWeight="bold" color="primary" gutterBottom>
-            Nossa História
-          </Typography>
-          <Typography variant="body1" paragraph>
-            Em 2015, transformamos paixão por bicicletas em uma escola de referência. 
-            Começamos em uma pequena garagem e hoje formamos mais de <strong>3.200 mecânicos</strong> 
-            especializados em todo o Brasil.
-          </Typography>
-          <Typography variant="body1" paragraph>
-            Somos a <strong>primeira escola brasileira</strong> focada exclusivamente em 
-            mecânica de bicicletas, com metodologia prática e reconhecimento nacional.
-          </Typography>
-        </motion.div>
-      </div>
-    </div>
-
-    {/* SEGUNDA SEÇÃO - Foto DIREITA, Texto ESQUERDA */}
-    <div className="sobre-container">
-      <div className="sobre-conteudo">
-        <motion.div
-          initial={{ opacity: 0, x: -50 }}
-          whileInView={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.7 }}
-          viewport={{ once: true }}
-        >
-          <Typography variant="h5" fontWeight="bold" color="primary" gutterBottom>
-            Por que Escolher Bicicletas?
-          </Typography>
-          <Typography variant="body1" paragraph>
-            • <strong>Mercado em crescimento</strong> de 25% ao ano<br/>
-            • <strong>Baixo investimento</strong> para começar<br/>
-            • <strong>Alta demanda</strong> por especialistas<br/>
-            • <strong>Trabalho com propósito</strong> e sustentabilidade<br/>
-          </Typography>
-          
-          <div className="estatisticas">
-            <div className="estatistica">
-              <Typography variant="h4" color="primary" fontWeight="bold">
-                3.2K+
-              </Typography>
-              <Typography variant="body2">Mecânicos</Typography>
+          {/* PRIMEIRA SEÇÃO - Foto ESQUERDA, Texto DIREITA */}
+          <div className="sobre-container sobre-container-reverse">
+            <div className="sobre-imagem">
+              <motion.div
+                initial={{ opacity: 0, x: -50 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.7 }}
+                viewport={{ once: true }}
+              >
+                <Box
+                  component="img"
+                  src="https://images.unsplash.com/photo-1532298229144-0ec0c57515c7?auto=format&fit=crop&w=600&h=400&q=80"
+                  alt="Oficina de bicicletas"
+                  className="sobre-img"
+                />
+              </motion.div>
             </div>
-            <div className="estatistica">
-              <Typography variant="h4" color="primary" fontWeight="bold">
-                94%
-              </Typography>
-              <Typography variant="body2">Empregados</Typography>
-            </div>
-            <div className="estatistica">
-              <Typography variant="h4" color="primary" fontWeight="bold">
-                15+
-              </Typography>
-              <Typography variant="body2">Cursos</Typography>
+            <div className="sobre-conteudo">
+              <motion.div
+                initial={{ opacity: 0, x: 50 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.7, delay: 0.2 }}
+                viewport={{ once: true }}
+              >
+                <Typography variant="h5" fontWeight="bold" color="primary" gutterBottom>
+                  Nossa História
+                </Typography>
+                <Typography variant="body1" paragraph>
+                  Em 2015, transformamos paixão por bicicletas em uma escola de referência. 
+                  Começamos em uma pequena garagem e hoje formamos mais de <strong>3.200 mecânicos</strong> 
+                  especializados em todo o Brasil.
+                </Typography>
+                <Typography variant="body1" paragraph>
+                  Somos a <strong>primeira escola brasileira</strong> focada exclusivamente em 
+                  mecânica de bicicletas, com metodologia prática e reconhecimento nacional.
+                </Typography>
+              </motion.div>
             </div>
           </div>
-        </motion.div>
-      </div>
-      <div className="sobre-imagem">
-        <motion.div
-          initial={{ opacity: 0, x: 50 }}
-          whileInView={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.7, delay: 0.2 }}
-          viewport={{ once: true }}
-        >
-          <Box
-            component="img"
-            src="https://images.unsplash.com/photo-1571068316344-75bc76f77890?auto=format&fit=crop&w=600&h=400&q=80"
-            alt="Mecânico trabalhando em bicicleta"
-            className="sobre-img"
-          />
-        </motion.div>
-      </div>
-    </div>
 
-    {/* TERCEIRA SEÇÃO - Foto ESQUERDA, Texto DIREITA */}
-    <div className="sobre-container sobre-container-reverse">
-      <div className="sobre-imagem">
-        <motion.div
-          initial={{ opacity: 0, x: -50 }}
-          whileInView={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.7 }}
-          viewport={{ once: true }}
-        >
-          <Box
-            component="img"
-            src="https://images.unsplash.com/photo-1570870625148-2d2d9c9b49d3?auto=format&fit=crop&w=600&h=400&q=80"
-            alt="Equipe do Clube do Mecânico"
-            className="sobre-img"
-          />
-        </motion.div>
-      </div>
-      <div className="sobre-conteudo">
-        <motion.div
-          initial={{ opacity: 0, x: 50 }}
-          whileInView={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.7, delay: 0.2 }}
-          viewport={{ once: true }}
-        >
-          <Typography variant="h5" fontWeight="bold" color="primary" gutterBottom>
-            Nossa Metodologia
-          </Typography>
-          
-          <div className="diferenciais">
-            <div className="diferenciais-grid">
-              {beneficios.map((beneficio, index) => (
-                <div className="diferencial-item" key={index}>
-                  <Stack direction="row" spacing={1} alignItems="center">
-                    <CheckCircleIcon color="success" fontSize="small" />
-                    <Typography variant="body2">{beneficio}</Typography>
-                  </Stack>
+          {/* SEGUNDA SEÇÃO - Foto DIREITA, Texto ESQUERDA */}
+          <div className="sobre-container">
+            <div className="sobre-conteudo">
+              <motion.div
+                initial={{ opacity: 0, x: -50 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.7 }}
+                viewport={{ once: true }}
+              >
+                <Typography variant="h5" fontWeight="bold" color="primary" gutterBottom>
+                  Por que Escolher Bicicletas?
+                </Typography>
+                <Typography variant="body1" paragraph>
+                  • <strong>Mercado em crescimento</strong> de 25% ao ano<br/>
+                  • <strong>Baixo investimento</strong> para começar<br/>
+                  • <strong>Alta demanda</strong> por especialistas<br/>
+                  • <strong>Trabalho com propósito</strong> e sustentabilidade<br/>
+                </Typography>
+                
+                <div className="estatisticas">
+                  <div className="estatistica">
+                    <Typography variant="h4" color="primary" fontWeight="bold">
+                      3.2K+
+                    </Typography>
+                    <Typography variant="body2">Mecânicos</Typography>
+                  </div>
+                  <div className="estatistica">
+                    <Typography variant="h4" color="primary" fontWeight="bold">
+                      94%
+                    </Typography>
+                    <Typography variant="body2">Empregados</Typography>
+                  </div>
+                  <div className="estatistica">
+                    <Typography variant="h4" color="primary" fontWeight="bold">
+                      15+
+                    </Typography>
+                    <Typography variant="body2">Cursos</Typography>
+                  </div>
                 </div>
-              ))}
+              </motion.div>
+            </div>
+            <div className="sobre-imagem">
+              <motion.div
+                initial={{ opacity: 0, x: 50 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.7, delay: 0.2 }}
+                viewport={{ once: true }}
+              >
+                <Box
+                  component="img"
+                  src="https://images.unsplash.com/photo-1571068316344-75bc76f77890?auto=format&fit=crop&w=600&h=400&q=80"
+                  alt="Mecânico trabalhando em bicicleta"
+                  className="sobre-img"
+                />
+              </motion.div>
             </div>
           </div>
-          
-          <Box sx={{ mt: 3 }}>
-            <Button 
-              variant="contained" 
-              color="primary"
-              startIcon={<BuildIcon />}
-              sx={{ borderRadius: 2 }}
-            >
-              Conheça Nossos Cursos
-            </Button>
-          </Box>
-        </motion.div>
-      </div>
-    </div>
 
-  </motion.div>
-</Container>
+          {/* TERCEIRA SEÇÃO - Foto ESQUERDA, Texto DIREITA */}
+          <div className="sobre-container sobre-container-reverse">
+            <div className="sobre-imagem">
+              <motion.div
+                initial={{ opacity: 0, x: -50 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.7 }}
+                viewport={{ once: true }}
+              >
+                <Box
+                  component="img"
+                  src="https://images.unsplash.com/photo-1570870625148-2d2d9c9b49d3?auto=format&fit=crop&w=600&h=400&q=80"
+                  alt="Equipe do Clube do Mecânico"
+                  className="sobre-img"
+                />
+              </motion.div>
+            </div>
+            <div className="sobre-conteudo">
+              <motion.div
+                initial={{ opacity: 0, x: 50 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.7, delay: 0.2 }}
+                viewport={{ once: true }}
+              >
+                <Typography variant="h5" fontWeight="bold" color="primary" gutterBottom>
+                  Nossa Metodologia
+                </Typography>
+                
+                <div className="diferenciais">
+                  <div className="diferenciais-grid">
+                    {beneficios.map((beneficio, index) => (
+                      <div className="diferencial-item" key={index}>
+                        <Stack direction="row" spacing={1} alignItems="center">
+                          <CheckCircleIcon color="success" fontSize="small" />
+                          <Typography variant="body2">{beneficio}</Typography>
+                        </Stack>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                
+                <Box sx={{ mt: 3 }}>
+                  <Button 
+                    variant="contained" 
+                    color="primary"
+                    startIcon={<BuildIcon />}
+                    sx={{ borderRadius: 2 }}
+                    onClick={() => navigate("/cursos")}
+                  >
+                    Conheça Nossos Cursos
+                  </Button>
+                </Box>
+              </motion.div>
+            </div>
+          </div>
+
+        </motion.div>
+      </Container>
 
       {/* Seção de Cursos */}
       <section id="cursos" className="cursos-section">
@@ -517,8 +801,9 @@ const Home: React.FC = () => {
                         style={{
                           backgroundColor: curso.cor,
                         }}
+                        onClick={() => navigate(`/curso/${curso.id}`)}
                       >
-                        Saiba Mais
+                        {isLoggedIn ? 'Ver Detalhes' : 'Saiba Mais'}
                       </Button>
                     </div>
                   </Card>
@@ -532,6 +817,7 @@ const Home: React.FC = () => {
                 color="primary"
                 size="large"
                 className="botao-todos-cursos"
+                onClick={() => navigate("/cursos")}
               >
                 Ver Todos os Cursos
               </Button>
@@ -555,14 +841,27 @@ const Home: React.FC = () => {
           <Typography variant="h6" className="cta-subtitulo">
             Invista no seu futuro com os melhores cursos de mecânica do mercado
           </Typography>
-          <Button
-            variant="contained"
-            color="secondary"
-            size="large"
-            className="cta-botao"
-          >
-            Matricule-se Agora
-          </Button>
+          {isLoggedIn ? (
+            <Button
+              variant="contained"
+              color="secondary"
+              size="large"
+              className="cta-botao"
+              onClick={() => navigate("/cursos")}
+            >
+              Explorar Cursos
+            </Button>
+          ) : (
+            <Button
+              variant="contained"
+              color="secondary"
+              size="large"
+              className="cta-botao"
+              onClick={() => navigate("/cadastrar")}
+            >
+              Matricule-se Agora
+            </Button>
+          )}
         </Paper>
       </Container>
 
@@ -648,22 +947,53 @@ const Home: React.FC = () => {
                 gutterBottom
                 className="footer-coluna-titulo"
               >
-                Horários
+                {isLoggedIn ? 'Acesso Rápido' : 'Horários'}
               </Typography>
-              <Typography variant="body2" className="footer-horarios">
-                <strong>Secretaria:</strong>
-                <br />
-                Segunda a Sexta: 8h às 18h
-                <br />
-                Sábado: 8h às 12h
-              </Typography>
-              <Typography variant="body2" className="footer-aulas">
-                <strong>Aulas:</strong>
-                <br />
-                Manhã, Tarde e Noite
-                <br />
-                Turmas aos Sábados
-              </Typography>
+              {isLoggedIn ? (
+                <>
+                  <Button
+                    variant="text"
+                    fullWidth
+                    sx={{ justifyContent: 'flex-start', mb: 1 }}
+                    onClick={() => navigate(userType === 'admin' ? '/admin/dashboard' : '/aluno/dashboard')}
+                  >
+                    Dashboard
+                  </Button>
+                  <Button
+                    variant="text"
+                    fullWidth
+                    sx={{ justifyContent: 'flex-start', mb: 1 }}
+                    onClick={() => navigate('/cursos')}
+                  >
+                    Meus Cursos
+                  </Button>
+                  <Button
+                    variant="text"
+                    fullWidth
+                    sx={{ justifyContent: 'flex-start' }}
+                    onClick={() => navigate('/carrinho')}
+                  >
+                    Meu Carrinho
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Typography variant="body2" className="footer-horarios">
+                    <strong>Secretaria:</strong>
+                    <br />
+                    Segunda a Sexta: 8h às 18h
+                    <br />
+                    Sábado: 8h às 12h
+                  </Typography>
+                  <Typography variant="body2" className="footer-aulas">
+                    <strong>Aulas:</strong>
+                    <br />
+                    Manhã, Tarde e Noite
+                    <br />
+                    Turmas aos Sábados
+                  </Typography>
+                </>
+              )}
             </div>
           </div>
 

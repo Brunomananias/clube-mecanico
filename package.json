@@ -14,8 +14,12 @@
     "@emotion/styled": "^11.14.1",
     "@mui/icons-material": "^7.3.6",
     "@mui/material": "^7.3.6",
+    "@mui/x-date-pickers": "^8.21.0",
     "axios": "^1.13.2",
+    "dayjs": "^1.11.19",
     "framer-motion": "^12.23.25",
+    "install": "^0.13.0",
+    "npm": "^11.6.4",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-router-dom": "^7.10.1"

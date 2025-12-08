@@ -5,30 +5,11 @@ import {
   Typography,
   Button,
   Box,
-  Card,
-  CardContent,
-  Avatar,
   Divider,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  IconButton,
-  Chip,
   Toolbar,
 } from '@mui/material';
 import {
-  AdminPanelSettings,
-  People,
-  School,
-  TrendingUp,
   Add,
-  Edit,
-  Delete,
-  CheckCircle,
-  Cancel,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/NavBar';
@@ -45,13 +26,6 @@ const AdminDashboard: React.FC = () => {
     localStorage.removeItem('userEmail');
     navigate('/login');
   };
-
-  const students = [
-    { id: 1, name: 'João Silva', email: 'joao@email.com', course: 'Mecânica Básica', status: 'Ativo' },
-    { id: 2, name: 'Maria Santos', email: 'maria@email.com', course: 'Eletrônica', status: 'Ativo' },
-    { id: 3, name: 'Pedro Costa', email: 'pedro@email.com', course: 'Gestão', status: 'Inativo' },
-    { id: 4, name: 'Ana Oliveira', email: 'ana@email.com', course: 'Motos', status: 'Ativo' },
-  ];
 
   return (
     <>
@@ -79,7 +53,7 @@ const AdminDashboard: React.FC = () => {
           </Button>
         </Box>
 
-        {/* Cards de Estatísticas */}
+        {/* Cards de Estatísticas
         <Box sx={{ 
           display: 'flex', 
           flexWrap: 'wrap', 
@@ -144,10 +118,10 @@ const AdminDashboard: React.FC = () => {
               </Box>
             </CardContent>
           </Card>
-        </Box>
+        </Box> */}
 
         {/* Tabela de Alunos */}
-        <Paper sx={{ p: 3, mb: 4 }}>
+        {/* <Paper sx={{ p: 3, mb: 4 }}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
             <Typography variant="h5" fontWeight="bold">
               Gerenciamento de Alunos
@@ -197,7 +171,7 @@ const AdminDashboard: React.FC = () => {
               </TableBody>
             </Table>
           </TableContainer>
-        </Paper>
+        </Paper> */}
 
         {/* Seções de Gerenciamento */}
         <Box sx={{ 
@@ -218,25 +192,6 @@ const AdminDashboard: React.FC = () => {
             </Button>
             <Button variant="outlined" fullWidth sx={{ mb: 2 }}>
               Criar Novo Curso
-            </Button>
-            <Button variant="outlined" fullWidth>
-              Estatísticas de Cursos
-            </Button>
-          </Paper>
-          
-          <Paper sx={{ p: 3 }}>
-            <Typography variant="h5" fontWeight="bold" gutterBottom>
-              Configurações do Sistema
-            </Typography>
-            <Divider sx={{ mb: 3 }} />
-            <Button variant="outlined" fullWidth sx={{ mb: 2 }}>
-              Configurações do Site
-            </Button>
-            <Button variant="outlined" fullWidth sx={{ mb: 2 }}>
-              Gerenciar Usuários
-            </Button>
-            <Button variant="outlined" fullWidth>
-              Backup do Sistema
             </Button>
           </Paper>
         </Box>
