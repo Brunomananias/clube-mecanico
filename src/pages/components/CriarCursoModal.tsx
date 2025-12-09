@@ -31,6 +31,7 @@ import {
   AttachMoney,
 } from '@mui/icons-material';
 import axios from 'axios';
+import api from '../../config/api';
 
 interface CreateCourseModalProps {
   open: boolean;
@@ -131,7 +132,7 @@ const CriarCursoModal: React.FC<CreateCourseModalProps> = ({ open, onClose, onCo
   const createCourseWithAxios = async (courseData: any) => {
     const token = localStorage.getItem('token');
     
-    const response = await axios.post('https://localhost:5001/api/cursos', courseData, {
+    const response = await api.post('/cursos', courseData, {
       headers: {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
@@ -175,16 +176,6 @@ const CriarCursoModal: React.FC<CreateCourseModalProps> = ({ open, onClose, onCo
       };
 
       await createCourseWithAxios(courseData);
-      
-      setSuccess(true);
-      setTimeout(() => {
-        handleReset();
-        onClose();
-        if (onCourseCreated) {
-          onCourseCreated();
-        }
-      }, 1500);
-
     } catch (err: any) {
       if (axios.isAxiosError(err)) {
         setError(err.response?.data?.message || 'Erro ao criar curso');

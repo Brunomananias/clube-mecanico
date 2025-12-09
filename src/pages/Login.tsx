@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState } from "react";
 import {
   Container,
@@ -30,11 +30,12 @@ import {
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import "./Login.css";
+import { authService } from "../services/authService";
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [userType, setUserType] = useState<"aluno" | "admin">("aluno");
+  const [userType, setUserType] = useState<0 | 1>(0); // 0 = aluno, 1 = admin
   const [rememberMe, setRememberMe] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
@@ -62,41 +63,53 @@ const Login: React.FC = () => {
       return;
     }
 
-    // Simulação de login (em um sistema real, você faria uma chamada API)
-    setTimeout(() => {
-      setLoading(false);
+    try {
+      // Autenticação REAL com o backend
+      const credentials = {
+        email: email.trim(),
+        senha: password,
+        tipo: userType
+      };
+
+      await authService.login(credentials);
       
-      // Credenciais de exemplo para demonstração
-      if (userType === "admin") {
-        if (email === "admin@clube.com" && password === "admin123") {
-          // Login bem-sucedido como admin
-          localStorage.setItem("userType", "admin");
-          localStorage.setItem("isLoggedIn", "true");
-          localStorage.setItem("userEmail", email);
-          navigate("/admin/dashboard");
-        } else {
-          setError("Credenciais de administrador inválidas");
-        }
+      // Redirecionar baseado no tipo de usuário
+      if (userType === 1) {
+        navigate("/admin/dashboard");
       } else {
-        // Login como aluno (simulação)
-        localStorage.setItem("userType", "aluno");
-        localStorage.setItem("isLoggedIn", "true");
-        localStorage.setItem("userEmail", email);
         navigate("/aluno/dashboard");
       }
-    }, 1500);
+      
+    } catch (error: any) {
+      console.error('Erro no login:', error);
+      
+      // Mensagens de erro mais específicas
+      if (error.message === 'Credenciais inválidas') {
+        setError("Email ou senha incorretos");
+      } else if (error.message.includes('conectar')) {
+        setError("Servidor indisponível. Tente novamente mais tarde.");
+      } else {
+        setError(error.message || "Erro ao fazer login. Tente novamente.");
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleDemoLogin = (type: "admin" | "aluno") => {
-    if (type === "admin") {
-      setEmail("admin@clube.com");
-      setPassword("admin123");
-      setUserType("admin");
+  const handleDemoLogin = (type: 0 | 1) => {
+    if (type === 1) {
+      setEmail("admin@clubedomecanico.com");
+      setPassword("Admin@123");
+      setUserType(1);
     } else {
-      setEmail("aluno@clube.com");
-      setPassword("aluno123");
-      setUserType("aluno");
+      setEmail("aluno@exemplo.com");
+      setPassword("Aluno@123");
+      setUserType(0);
     }
+  };
+
+  const getUserTypeLabel = (type: 0 | 1) => {
+    return type === 1 ? "Administrador" : "Aluno";
   };
 
   return (
@@ -126,7 +139,7 @@ const Login: React.FC = () => {
                 CLUBE DO MECÂNICO
               </Typography>
               <Typography variant="subtitle1" color="text.secondary">
-                Área do {userType === "admin" ? "Administrador" : "Aluno"}
+                Área do {getUserTypeLabel(userType)}
               </Typography>
             </Box>
           </Box>
@@ -144,10 +157,10 @@ const Login: React.FC = () => {
               <Box sx={{ flex: { xs: "1 1 100%", sm: "1" } }}>
                 <Button
                   fullWidth
-                  variant={userType === "aluno" ? "contained" : "outlined"}
+                  variant={userType === 0 ? "contained" : "outlined"}
                   color="primary"
                   startIcon={<SchoolIcon />}
-                  onClick={() => setUserType("aluno")}
+                  onClick={() => setUserType(0)}
                   className="user-type-button"
                   sx={{
                     py: 1.5,
@@ -155,16 +168,16 @@ const Login: React.FC = () => {
                     borderWidth: 2,
                   }}
                 >
-                  Aluno
+                  Aluno (0)
                 </Button>
               </Box>
               <Box sx={{ flex: { xs: "1 1 100%", sm: "1" } }}>
                 <Button
                   fullWidth
-                  variant={userType === "admin" ? "contained" : "outlined"}
+                  variant={userType === 1 ? "contained" : "outlined"}
                   color="secondary"
                   startIcon={<AdminIcon />}
-                  onClick={() => setUserType("admin")}
+                  onClick={() => setUserType(1)}
                   className="user-type-button"
                   sx={{
                     py: 1.5,
@@ -172,7 +185,7 @@ const Login: React.FC = () => {
                     borderWidth: 2,
                   }}
                 >
-                  Administrador
+                  Administrador (1)
                 </Button>
               </Box>
             </Box>
@@ -181,13 +194,13 @@ const Login: React.FC = () => {
           {/* Indicador de Tipo Ativo */}
           <Box className="user-type-indicator" sx={{ mt: 2, mb: 3 }}>
             <Chip
-              icon={userType === "admin" ? <AdminIcon /> : <SchoolIcon />}
+              icon={userType === 1 ? <AdminIcon /> : <SchoolIcon />}
               label={
-                userType === "admin"
-                  ? "Modo Administrador"
-                  : "Modo Aluno"
+                userType === 1
+                  ? "Modo Administrador (1)"
+                  : "Modo Aluno (0)"
               }
-              color={userType === "admin" ? "secondary" : "primary"}
+              color={userType === 1 ? "secondary" : "primary"}
               variant="outlined"
               sx={{ fontWeight: "bold" }}
             />
@@ -303,11 +316,11 @@ const Login: React.FC = () => {
                     fullWidth
                     variant="outlined"
                     size="small"
-                    onClick={() => handleDemoLogin("aluno")}
+                    onClick={() => handleDemoLogin(0)}
                     disabled={loading}
                     startIcon={<SchoolIcon />}
                   >
-                    Login Aluno Demo
+                    Login Aluno Demo (0)
                   </Button>
                 </Box>
                 <Box sx={{ flex: { xs: "1 1 100%", sm: "1" } }}>
@@ -316,11 +329,11 @@ const Login: React.FC = () => {
                     variant="outlined"
                     size="small"
                     color="secondary"
-                    onClick={() => handleDemoLogin("admin")}
+                    onClick={() => handleDemoLogin(1)}
                     disabled={loading}
                     startIcon={<AdminIcon />}
                   >
-                    Login Admin Demo
+                    Login Admin Demo (1)
                   </Button>
                 </Box>
               </Box>
@@ -334,12 +347,12 @@ const Login: React.FC = () => {
 
             <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
               <Typography variant="body2" align="center" gutterBottom>
-                {userType === "aluno"
+                {userType === 0
                   ? "Não tem uma conta de aluno?"
                   : "Acesso restrito a administradores"}
               </Typography>
               
-              {userType === "aluno" && (
+              {userType === 0 && (
                 <Button
                   fullWidth
                   variant="outlined"
@@ -366,7 +379,7 @@ const Login: React.FC = () => {
           <Box className="login-info" sx={{ mt: 4, p: 2, bgcolor: "grey.50", borderRadius: 2 }}>
             <Typography variant="body2" color="text.secondary" align="center">
               <strong>Informações:</strong>
-              {userType === "admin" ? (
+              {userType === 1 ? (
                 " Acesso ao painel administrativo para gerenciar cursos, alunos e conteúdo."
               ) : (
                 " Acesso aos seus cursos, certificados, materiais e suporte."

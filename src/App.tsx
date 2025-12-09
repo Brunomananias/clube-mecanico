@@ -13,31 +13,57 @@ import MercadoPagoCheckout from './pages/MercadoPagoCheckout';
 import PagamentoSucesso from './pages/pagamento/PagamentoSucesso';
 import PagamentoFalha from './pages/pagamento/PagamentoFalha';
 import PagamentoPendente from './pages/pagamento/PagamentoPendente';
+import CursosAdminPage from './pages/administrador/CursoAdminPage';
+import { authService } from './services/authService'; // Importe o authService
 
 // Componente para rotas protegidas
-const PrivateRoute = ({ children, requiredRole }: { children: React.ReactNode, requiredRole?: 'aluno' | 'admin' }) => {
-  const isAuthenticated = localStorage.getItem('isLoggedIn') === 'true';
+const PrivateRoute = ({ children, requiredRole }: { children: React.ReactNode, requiredRole?: 0 | 1 }) => {
+  const isAuthenticated = authService.isAuthenticated();
   
   if (!isAuthenticated) {
-    return <Navigate to="/login" />;
+    return <Navigate to="/login" replace />;
   }
   
-  if (requiredRole) {
-    const userRole = localStorage.getItem('userType');
-    if (userRole !== requiredRole) {
-      return <Navigate to="/" />;
+  if (requiredRole !== undefined) {
+    const user = authService.getCurrentUser();
+    
+    if (!user) {
+      return <Navigate to="/login" replace />;
+    }
+    
+    if (user.tipo !== requiredRole) {
+      // Redireciona para dashboard apropriado
+      if (user.tipo === 1) {
+        return <Navigate to="/admin/dashboard" replace />;
+      } else {
+        return <Navigate to="/aluno/dashboard" replace />;
+      }
     }
   }
   
   return <>{children}</>;
 };
 
+// Uso nas rotas:
+<>
+  // Uso nas rotas:
+  <Route
+    path="/aluno/dashboard"
+    element={<PrivateRoute requiredRole={0}>
+      <AlunoDashboard />
+    </PrivateRoute>} /><Route
+    path="/admin/dashboard"
+    element={<PrivateRoute requiredRole={1}>
+      <AdminDashboard />
+    </PrivateRoute>} /></>
+
 // Componente para rotas públicas que requerem autenticação (como carrinho)
 const AuthRoute = ({ children }: { children: React.ReactNode }) => {
-  const isAuthenticated = localStorage.getItem('isLoggedIn') === 'true';
+  const isAuthenticated = authService.isAuthenticated();
   
   if (!isAuthenticated) {
-    return <Navigate to="/login" />;
+    console.log('Rota protegida: usuário não autenticado');
+    return <Navigate to="/login" replace />;
   }
   
   return <>{children}</>;
@@ -49,7 +75,7 @@ function App() {
   // Verificar estado de login quando o componente montar
   useEffect(() => {
     const checkLogin = () => {
-      const loggedIn = localStorage.getItem('isLoggedIn') === 'true';
+      const loggedIn = authService.isAuthenticated();
       setIsLoggedIn(loggedIn);
     };
     
@@ -62,6 +88,13 @@ function App() {
       window.removeEventListener('storage', checkLogin);
     };
   }, []);
+
+  // Função para verificar o estado atual (útil para debug)
+  useEffect(() => {
+    console.log('Estado de login:', isLoggedIn);
+    console.log('Token no localStorage:', localStorage.getItem('auth_token'));
+    console.log('Usuário no localStorage:', localStorage.getItem('user'));
+  }, [isLoggedIn]);
 
   return (
     <Router>
@@ -135,6 +168,15 @@ function App() {
           element={
             <PrivateRoute requiredRole="admin">
               <AdminDashboard />
+            </PrivateRoute>
+          } 
+        />
+
+        <Route 
+          path="/admin/cursos" 
+          element={
+            <PrivateRoute requiredRole="admin">
+              <CursosAdminPage />
             </PrivateRoute>
           } 
         />

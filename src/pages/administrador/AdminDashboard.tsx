@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState } from 'react';
 import {
   Container,
@@ -12,12 +13,14 @@ import {
   Add,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
-import Navbar from '../components/NavBar';
+import Navbar from '../components/Navbar';
 import CriarCursoModal from '../components/CriarCursoModal';
+import CriarTurmaModal from '../components/CriarTurmaModal';
 
 const AdminDashboard: React.FC = () => {
   const navigate = useNavigate();
   const [modalOpen, setModalOpen] = useState(false);
+  const [modalNovaTurmaOpen, setModalNovaTurmaOpen] = useState(false);
   const userEmail = localStorage.getItem('userEmail') || 'admin@clube.com';
 
   const handleLogout = () => {
@@ -26,6 +29,33 @@ const AdminDashboard: React.FC = () => {
     localStorage.removeItem('userEmail');
     navigate('/login');
   };
+
+  const handleSaveTurma = async (turmaData: any) => {
+  console.log('Salvando turma:', turmaData);
+  
+  try {
+    // Simulação de salvamento
+    // const novaTurma = {
+    //   id: turmas.length + 1,
+    //   cursoId: parseInt(turmaData.cursoId),
+    //   cursoNome: cursos.find(c => c.id === parseInt(turmaData.cursoId))?.titulo || '',
+    //   dataInicio: turmaData.dataInicio,
+    //   dataFim: turmaData.dataFim,
+    //   horario: turmaData.horario,
+    //   professor: turmaData.professor,
+    //   vagasTotal: turmaData.vagasTotal,
+    //   vagasDisponiveis: turmaData.vagasDisponiveis,
+    //   status: turmaData.status
+    // };
+    
+    // // setTurmas([...turmas, novaTurma]);
+    // console.log('Turma simulada criada:', novaTurma);
+    
+  } catch (error) {
+    console.error('Erro ao criar turma:', error);
+    throw error;
+  }
+};
 
   return (
     <>
@@ -51,127 +81,15 @@ const AdminDashboard: React.FC = () => {
           >
             Novo Curso
           </Button>
+           <Button
+            variant="contained"
+            color="primary"
+            startIcon={<Add />}
+            onClick={() => setModalNovaTurmaOpen(true)} // Abre o modal
+          >
+            Nova Turma
+          </Button>
         </Box>
-
-        {/* Cards de Estatísticas
-        <Box sx={{ 
-          display: 'flex', 
-          flexWrap: 'wrap', 
-          gap: 3, 
-          mb: 4,
-          '& > *': {
-            flex: { xs: '1 1 100%', sm: '1 1 calc(50% - 12px)', md: '1 1 calc(25% - 12px)' }
-          }
-        }}>
-          <Card>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                <Avatar sx={{ bgcolor: 'primary.main', mr: 2 }}>
-                  <People />
-                </Avatar>
-                <Box>
-                  <Typography variant="h6">Total Alunos</Typography>
-                  <Typography variant="h4" fontWeight="bold">1,248</Typography>
-                </Box>
-              </Box>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                <Avatar sx={{ bgcolor: 'success.main', mr: 2 }}>
-                  <School />
-                </Avatar>
-                <Box>
-                  <Typography variant="h6">Cursos Ativos</Typography>
-                  <Typography variant="h4" fontWeight="bold">15</Typography>
-                </Box>
-              </Box>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                <Avatar sx={{ bgcolor: 'warning.main', mr: 2 }}>
-                  <TrendingUp />
-                </Avatar>
-                <Box>
-                  <Typography variant="h6">Matrículas (Mês)</Typography>
-                  <Typography variant="h4" fontWeight="bold">86</Typography>
-                </Box>
-              </Box>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                <Avatar sx={{ bgcolor: 'info.main', mr: 2 }}>
-                  <AdminPanelSettings />
-                </Avatar>
-                <Box>
-                  <Typography variant="h6">Taxa de Conclusão</Typography>
-                  <Typography variant="h4" fontWeight="bold">74%</Typography>
-                </Box>
-              </Box>
-            </CardContent>
-          </Card>
-        </Box> */}
-
-        {/* Tabela de Alunos */}
-        {/* <Paper sx={{ p: 3, mb: 4 }}>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-            <Typography variant="h5" fontWeight="bold">
-              Gerenciamento de Alunos
-            </Typography>
-            <Button variant="contained" startIcon={<Add />}>
-              Adicionar Aluno
-            </Button>
-          </Box>
-          
-          <TableContainer>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell>ID</TableCell>
-                  <TableCell>Nome</TableCell>
-                  <TableCell>Email</TableCell>
-                  <TableCell>Curso</TableCell>
-                  <TableCell>Status</TableCell>
-                  <TableCell>Ações</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {students.map((student) => (
-                  <TableRow key={student.id}>
-                    <TableCell>{student.id}</TableCell>
-                    <TableCell>{student.name}</TableCell>
-                    <TableCell>{student.email}</TableCell>
-                    <TableCell>{student.course}</TableCell>
-                    <TableCell>
-                      <Chip
-                        label={student.status}
-                        color={student.status === 'Ativo' ? 'success' : 'error'}
-                        size="small"
-                        icon={student.status === 'Ativo' ? <CheckCircle /> : <Cancel />}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <IconButton size="small" color="primary">
-                        <Edit fontSize="small" />
-                      </IconButton>
-                      <IconButton size="small" color="error">
-                        <Delete fontSize="small" />
-                      </IconButton>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        </Paper> */}
 
         {/* Seções de Gerenciamento */}
         <Box sx={{ 
@@ -182,12 +100,14 @@ const AdminDashboard: React.FC = () => {
             flex: { xs: '1 1 100%', md: '1 1 calc(50% - 12px)' }
           }
         }}>
-          <Paper sx={{ p: 3 }}>
+          <Paper sx={{ p: 3}}>
             <Typography variant="h5" fontWeight="bold" gutterBottom>
               Gerenciamento de Cursos
             </Typography>
             <Divider sx={{ mb: 3 }} />
-            <Button variant="outlined" fullWidth sx={{ mb: 2 }}>
+            <Button variant="outlined" fullWidth sx={{ mb: 2 }} onClick={() => {
+              navigate("/admin/cursos")
+            }}>
               Ver Todos os Cursos
             </Button>
             <Button variant="outlined" fullWidth sx={{ mb: 2 }}>
@@ -200,6 +120,11 @@ const AdminDashboard: React.FC = () => {
         open={modalOpen}
         onClose={() => setModalOpen(false)}
       />
+      <CriarTurmaModal
+      open={modalNovaTurmaOpen}
+      onClose={() => setModalNovaTurmaOpen(false)}
+      onSave={handleSaveTurma}
+/>
     </>
   );
 };
