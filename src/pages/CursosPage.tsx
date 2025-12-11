@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable react-hooks/set-state-in-effect */
+import React, { useEffect, useState } from 'react';
 import BuildIcon from "@mui/icons-material/Build";
 import {
   Typography,
@@ -14,7 +16,6 @@ import {
   FormControl,
   InputLabel,
   Paper,
-  Rating,
   Box,
   AppBar,
   Container,
@@ -22,8 +23,12 @@ import {
   IconButton,
   useMediaQuery,
   useTheme,
+  Avatar,
+  Menu,
+  Badge,
 } from '@mui/material';
 import MenuIcon from "@mui/icons-material/Menu";
+import { Snackbar, Alert } from '@mui/material';
 import {
   Search,
   ShoppingCart,
@@ -31,225 +36,540 @@ import {
   Group,
   Sort,
   KeyboardArrowRight,
+  Person,
+  ExitToApp,
+  Dashboard,
+  School,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
+import api from '../config/api';
 
-interface Curso {
+interface ICurso {
   id: number;
-  titulo: string;
+  codigo: string;
+  nome: string;
   descricao: string;
-  descricaoLonga: string;
+  fotoUrl: string;
   valor: number;
-  valorOriginal?: number;
-  duracao: string;
-  horas: number;
+  duracaoHoras: string;
   nivel: string;
   maxAlunos: number;
-  vagasDisponiveis: number;
-  categoria: string;
-  avaliacao: number;
-  totalAvaliacoes: number;
-  imagem: string;
+  conteudoProgramatico: string;
+  certificadoDisponivel: string;
   destaques: string[];
   cor: string;
+}
+
+interface ITurma {
+  id: number;
+  cursoId: number;
+  nome: string;
+  dataInicio: string;
+  dataFim: string;
+  horario: string;
+  professor: string;
+  vagasTotal: number;
+  vagasDisponiveis: number;
+  status: string;
+}
+
+interface User {
+  id: number;
+  nome: string;
+  email: string;
+  tipo: string;
 }
 
 const CursosPage: React.FC = () => {
   const navigate = useNavigate();
   const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
+  
+  // Estados do navbar
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [cartCount, setCartCount] = useState(0);
+  const open = Boolean(anchorEl);
+  
+  // Estados da página
   const [searchTerm, setSearchTerm] = useState('');
   const [categoria, setCategoria] = useState('todos');
   const [nivel, setNivel] = useState('todos');
   const [ordenacao, setOrdenacao] = useState('relevancia');
-  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
-  const cursos: Curso[] = [
-    {
-      id: 1,
-      titulo: "Mecânica de Bicicletas Básico",
-      descricao: "Aprenda os fundamentos da mecânica de bicicletas, desde manutenção preventiva até reparos essenciais.",
-      descricaoLonga: "Curso completo para iniciantes que desejam aprender a montar, ajustar e fazer manutenção em bicicletas. Inclui identificação de peças, ferramentas básicas e segurança no trabalho.",
-      valor: 297.00,
-      valorOriginal: 397.00,
-      duracao: "6 semanas",
-      horas: 40,
-      nivel: "Iniciante",
-      maxAlunos: 20,
-      vagasDisponiveis: 12,
-      categoria: "Mecânica Básica",
-      avaliacao: 4.8,
-      totalAvaliacoes: 124,
-      imagem: "https://images.unsplash.com/photo-1532298229144-0ec0c57515c7?auto=format&fit=crop&w=600&q=80",
-      destaques: ["Kit de ferramentas", "Certificado digital", "Acesso vitalício"],
-      cor: "#1976d2"
-    },
-    {
-      id: 2,
-      titulo: "Manutenção de Freios Hidráulicos",
-      descricao: "Especialização em sistemas de freio hidráulico para mountain bikes e bicicletas urbanas.",
-      descricaoLonga: "Aprenda a diagnosticar, reparar e ajustar freios hidráulicos das principais marcas. Inclui sangria, troca de pastilhas e manutenção de calipers.",
-      valor: 197.00,
-      duracao: "4 semanas",
-      horas: 30,
-      nivel: "Intermediário",
-      maxAlunos: 15,
-      vagasDisponiveis: 8,
-      categoria: "Freios",
-      avaliacao: 4.9,
-      totalAvaliacoes: 89,
-      imagem: "https://images.unsplash.com/photo-1576435728678-68d0fbf94e91?auto=format&fit=crop&w=600&q=80",
-      destaques: ["Certificado especializado", "Material didático", "Suporte técnico"],
-      cor: "#2e7d32"
-    },
-    {
-      id: 3,
-      titulo: "Suspensão e Geometria Avançada",
-      descricao: "Domine os sistemas de suspensão dianteira e traseira, ajustes e manutenção especializada.",
-      descricaoLonga: "Curso avançado para mecânicos que desejam especializar-se em suspensão. Inclui configuração de amortecimento, service de garfos e amortecedores.",
-      valor: 397.00,
-      duracao: "8 semanas",
-      horas: 60,
-      nivel: "Avançado",
-      maxAlunos: 12,
-      vagasDisponiveis: 5,
-      categoria: "Suspensão",
-      avaliacao: 4.7,
-      totalAvaliacoes: 67,
-      imagem: "https://images.unsplash.com/photo-1571068316344-75bc76f77890?auto=format&fit=crop&w=600&q=80",
-      destaques: ["Certificado avançado", "Ferramentas especializadas", "Workshop prático"],
-      cor: "#ed6c02"
-    },
-    {
-      id: 4,
-      titulo: "Transmissão e Câmbios",
-      descricao: "Especialização em sistemas de transmissão, câmbios dianteiros e traseiros de todas as marcas.",
-      descricaoLonga: "Aprenda a ajustar, regular e reparar sistemas de transmissão completos. Inclui Shimano, SRAM e Campagnolo.",
-      valor: 247.00,
-      valorOriginal: 297.00,
-      duracao: "5 semanas",
-      horas: 35,
-      nivel: "Intermediário",
-      maxAlunos: 18,
-      vagasDisponiveis: 10,
-      categoria: "Transmissão",
-      avaliacao: 4.6,
-      totalAvaliacoes: 92,
-      imagem: "https://images.unsplash.com/photo-1570870625148-2d2d9c9b49d3?auto=format&fit=crop&w=600&q=80",
-      destaques: ["Guia de especificações", "Ferramentas de ajuste", "Acesso ao fórum"],
-      cor: "#9c27b0"
-    },
-    {
-      id: 5,
-      titulo: "Mecânica de Bicicletas Elétricas",
-      descricao: "Curso especializado em bicicletas elétricas, motores, baterias e sistemas eletrônicos.",
-      descricaoLonga: "Aprenda a diagnosticar e reparar bicicletas elétricas. Inclui segurança com alta tensão, manutenção de baterias e sistemas de assistência.",
-      valor: 497.00,
-      duracao: "10 semanas",
-      horas: 80,
-      nivel: "Avançado",
-      maxAlunos: 10,
-      vagasDisponiveis: 4,
-      categoria: "Elétrica",
-      avaliacao: 4.9,
-      totalAvaliacoes: 45,
-      imagem: "https://images.unsplash.com/photo-1541625602330-2277a4c46182?auto=format&fit=crop&w=600&q=80",
-      destaques: ["Certificação especial", "Kit de segurança", "Suporte vitalício"],
-      cor: "#d32f2f"
-    },
-    {
-      id: 6,
-      titulo: "Gestão de Oficina de Bicicletas",
-      descricao: "Aprenda a administrar uma oficina de sucesso, desde atendimento até gestão financeira.",
-      descricaoLonga: "Curso completo para quem deseja empreender no setor de bicicletas. Inclui gestão de estoque, precificação, marketing e atendimento.",
-      valor: 347.00,
-      duracao: "6 semanas",
-      horas: 45,
-      nivel: "Todos os níveis",
-      maxAlunos: 25,
-      vagasDisponiveis: 15,
-      categoria: "Gestão",
-      avaliacao: 4.8,
-      totalAvaliacoes: 78,
-      imagem: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?auto=format&fit=crop&w=600&q=80",
-      destaques: ["Plano de negócios", "Modelos de contrato", "Consultoria"],
-      cor: "#0288d1"
-    },
-  ];
+  const [cursos, setCursos] = useState<ICurso[]>([]);
+  const [turmasPorCurso, setTurmasPorCurso] = useState<{[key: number]: ITurma[]}>({});
+  const [turmaSelecionada, setTurmaSelecionada] = useState<{[key: number]: number}>({});
+  const [loadingTurmas, setLoadingTurmas] = useState<{[key: number]: boolean}>({});
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: '',
+    severity: 'success' as 'success' | 'error' | 'warning' | 'info'
+  });
+
+  // Verificar se o usuário está logado
+  const isLoggedIn = !!localStorage.getItem('auth_token');
+  const userData = localStorage.getItem('user');
+  const user: User | null = userData ? JSON.parse(userData) : null;
+  const userEmail = user?.email || '';
+
+  // Menu do usuário
+  const handleMenuClick = (event: React.MouseEvent<HTMLElement>) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    handleMenuClose();
+    navigate('/login');
+  };
+
+  // Buscar contagem do carrinho
+  const buscarContagemCarrinho = async () => {
+    if (isLoggedIn) {
+      try {
+        const response = await api.get('/carrinho/itens');
+        if (response.data.success) {
+          setCartCount(response.data.dados.totalItens || 0);
+        }
+      } catch (error) {
+        console.error('Erro ao buscar carrinho:', error);
+      }
+    }
+  };
+
+  // Navbar para usuário logado
+  const renderLoggedInNavbar = () => (
+    <AppBar position="fixed" color="primary" elevation={3}>
+      <Container maxWidth="xl">
+        <Toolbar disableGutters>
+          <div className="nav-logo">
+            <BuildIcon sx={{ mr: 2, fontSize: 32 }} />
+            <Typography
+              variant="h6"
+              noWrap
+              component="a"
+              href="/"
+              className="logo-text"
+              sx={{ cursor: 'pointer' }}
+              onClick={(e) => {
+                e.preventDefault();
+                navigate('/');
+              }}
+            >
+              CLUBE DO MECÂNICO
+            </Typography>
+          </div>
+
+          {!isMobile ? (
+            <div className="nav-links">
+              <Button 
+                color="inherit" 
+                className="nav-link"
+                onClick={() => navigate('/')}
+              >
+                Início
+              </Button>
+              <Button 
+                color="inherit" 
+                className="nav-link"
+                onClick={() => navigate('/#sobre')}
+              >
+                Sobre
+              </Button>
+              <Button 
+                color="inherit" 
+                className="nav-link"
+                onClick={() => navigate('/cursos')}
+                sx={{ fontWeight: 'bold' }}
+              >
+                Cursos
+              </Button>
+              <Button 
+                color="inherit" 
+                className="nav-link"
+                onClick={() => navigate('/#contato')}
+              >
+                Contato
+              </Button>
+              
+              <Button
+                color="inherit"
+                className="nav-link"
+                onClick={() => navigate('/carrinho')}
+                startIcon={
+                  <Badge badgeContent={cartCount} color="error">
+                    <ShoppingCart />
+                  </Badge>
+                }
+              >
+                Carrinho
+              </Button>
+              
+              <Button
+                variant="contained"
+                color="secondary"
+                className="nav-button"
+                startIcon={<Dashboard />}
+                onClick={() => navigate(user?.tipo === 'admin' ? '/admin/dashboard' : '/aluno/dashboard')}
+              >
+                Meu Dashboard
+              </Button>
+
+              {/* Menu do usuário */}
+              <IconButton
+                onClick={handleMenuClick}
+                size="small"
+                sx={{ ml: 2 }}
+                aria-controls={open ? 'account-menu' : undefined}
+                aria-haspopup="true"
+                aria-expanded={open ? 'true' : undefined}
+              >
+                <Avatar sx={{ width: 32, height: 32, bgcolor: 'secondary.main' }}>
+                  <Person />
+                </Avatar>
+              </IconButton>
+              
+              <Menu
+                anchorEl={anchorEl}
+                id="account-menu"
+                open={open}
+                onClose={handleMenuClose}
+                onClick={handleMenuClose}
+                PaperProps={{
+                  elevation: 3,
+                  sx: {
+                    overflow: 'visible',
+                    filter: 'drop-shadow(0px 2px 8px rgba(0,0,0,0.32))',
+                    mt: 1.5,
+                    '& .MuiAvatar-root': {
+                      width: 32,
+                      height: 32,
+                      ml: -0.5,
+                      mr: 1,
+                    },
+                  },
+                }}
+                transformOrigin={{ horizontal: 'right', vertical: 'top' }}
+                anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+              >
+                <MenuItem disabled>
+                  <Typography variant="body2" color="text.secondary">
+                    {userEmail}
+                  </Typography>
+                </MenuItem>
+                <Box sx={{ mx: 2, my: 1 }}>
+                  <Typography variant="caption" color="text.secondary">
+                    {user?.tipo === 'admin' ? 'Administrador' : 'Aluno'}
+                  </Typography>
+                </Box>
+                <MenuItem onClick={() => navigate('/carrinho')}>
+                  <ShoppingCart fontSize="small" sx={{ mr: 2 }} />
+                  Meu Carrinho
+                  <Badge badgeContent={cartCount} color="error" sx={{ ml: 2 }} />
+                </MenuItem>
+                <MenuItem onClick={() => navigate('/meus-cursos')}>
+                  <School fontSize="small" sx={{ mr: 2 }} />
+                  Meus Cursos
+                </MenuItem>
+                <MenuItem onClick={() => navigate(user?.tipo === 'admin' ? '/admin/dashboard' : '/aluno/dashboard')}>
+                  <Dashboard fontSize="small" sx={{ mr: 2 }} />
+                  Dashboard
+                </MenuItem>
+                <MenuItem onClick={handleLogout}>
+                  <ExitToApp fontSize="small" sx={{ mr: 2 }} />
+                  Sair
+                </MenuItem>
+              </Menu>
+            </div>
+          ) : (
+            <>
+              <IconButton color="inherit" onClick={() => navigate('/carrinho')}>
+                <Badge badgeContent={cartCount} color="error">
+                  <ShoppingCart />
+                </Badge>
+              </IconButton>
+              <IconButton color="inherit" onClick={handleMenuClick}>
+                <MenuIcon />
+              </IconButton>
+              <Menu
+                anchorEl={anchorEl}
+                open={open}
+                onClose={handleMenuClose}
+                PaperProps={{
+                  sx: {
+                    width: 250,
+                    maxWidth: '100%',
+                  },
+                }}
+              >
+                <MenuItem onClick={() => navigate('/')}>Início</MenuItem>
+                <MenuItem onClick={() => navigate('/#sobre')}>Sobre</MenuItem>
+                <MenuItem onClick={() => navigate('/cursos')}>Cursos</MenuItem>
+                <MenuItem onClick={() => navigate('/#contato')}>Contato</MenuItem>
+                <MenuItem onClick={() => navigate('/carrinho')}>
+                  Carrinho {cartCount > 0 && `(${cartCount})`}
+                </MenuItem>
+                <MenuItem onClick={() => navigate(user?.tipo === 'admin' ? '/admin/dashboard' : '/aluno/dashboard')}>
+                  Dashboard
+                </MenuItem>
+                <MenuItem onClick={handleLogout}>Sair</MenuItem>
+              </Menu>
+            </>
+          )}
+        </Toolbar>
+      </Container>
+    </AppBar>
+  );
+
+  // Navbar para visitante
+  const renderVisitorNavbar = () => (
+    <AppBar position="fixed" color="primary" elevation={3}>
+      <Container maxWidth="xl">
+        <Toolbar disableGutters>
+          <div className="nav-logo">
+            <BuildIcon sx={{ mr: 2, fontSize: 32 }} />
+            <Typography
+              variant="h6"
+              noWrap
+              component="a"
+              href="/"
+              className="logo-text"
+              sx={{ cursor: 'pointer' }}
+              onClick={(e) => {
+                e.preventDefault();
+                navigate('/');
+              }}
+            >
+              CLUBE DO MECÂNICO
+            </Typography>
+          </div>
+
+          {!isMobile ? (
+            <div className="nav-links">
+              <Button 
+                color="inherit" 
+                className="nav-link"
+                onClick={() => navigate('/')}
+              >
+                Início
+              </Button>
+              <Button 
+                color="inherit" 
+                className="nav-link"
+                onClick={() => navigate('/#sobre')}
+              >
+                Sobre
+              </Button>
+              <Button 
+                color="inherit" 
+                className="nav-link"
+                onClick={() => navigate('/cursos')}
+                sx={{ fontWeight: 'bold' }}
+              >
+                Cursos
+              </Button>
+              <Button 
+                color="inherit" 
+                className="nav-link"
+                onClick={() => navigate('/#contato')}
+              >
+                Contato
+              </Button>
+              
+              <Button
+                variant="contained"
+                color="secondary"
+                className="nav-button"
+                onClick={() => navigate("/cadastrar")}
+              >
+                Matricule-se
+              </Button>
+              
+              <Button
+                color="inherit"
+                className="nav-link"
+                onClick={() => navigate("/login")}
+              >
+                Login
+              </Button>
+            </div>
+          ) : (
+            <IconButton color="inherit">
+              <MenuIcon />
+            </IconButton>
+          )}
+        </Toolbar>
+      </Container>
+    </AppBar>
+  );
+
+  // Funções da página de cursos
+  const listarCursos = async () => {
+    try {
+      const response = await api.get<ICurso[]>("/cursos");
+      setCursos(response.data);
+    } catch (error) {
+      console.error('Erro ao carregar cursos:', error);
+      setSnackbar({
+        open: true,
+        message: 'Erro ao carregar cursos',
+        severity: 'error'
+      });
+    }
+  }
+
+  const carregarTurmas = async (cursoId: number) => {
+    try {
+      setLoadingTurmas(prev => ({...prev, [cursoId]: true}));
+      const response = await api.get(`/cursos/${cursoId}/turmas`);
+      const turmasData = response.data.dados || [];
+      const turmasAtivas = turmasData.filter((turma: any) => 
+        turma.status === 'ABERTO'
+      );
+      
+      setTurmasPorCurso(prev => ({
+        ...prev,
+        [cursoId]: turmasAtivas
+      }));
+      
+      // Seleciona a primeira turma automaticamente
+      if (turmasAtivas.length > 0 && !turmaSelecionada[cursoId]) {
+        setTurmaSelecionada(prev => ({
+          ...prev,
+          [cursoId]: turmasAtivas[0].id
+        }));
+      }
+    } catch (error) {
+      console.error('Erro ao carregar turmas:', error);
+      setTurmasPorCurso(prev => ({
+        ...prev,
+        [cursoId]: []
+      }));
+    } finally {
+      setLoadingTurmas(prev => ({...prev, [cursoId]: false}));
+    }
+  }
 
   const handleVerCurso = (cursoId: number) => {
     navigate(`/curso/${cursoId}`);
   };
 
-  const handleAddToCart = (curso: Curso) => {
-    // Aqui você implementaria a lógica do carrinho
-    navigate('/carrinho', { state: { curso } });
+  const cursosFiltrados = cursos.filter(curso => {
+    const titulo = curso.nome || '';
+    const descricao = curso.descricao || '';
+    const nivelCurso = curso.nivel || '';
+    
+    const matchesSearch = titulo.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         descricao.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesNivel = nivel === 'todos' || nivelCurso === nivel;
+    
+    return matchesSearch && matchesNivel;
+  });
+
+  const handleAddToCart = async (curso: ICurso) => {
+    // Verifica se está logado
+    if (!isLoggedIn) {
+      setSnackbar({
+        open: true,
+        message: 'Você precisa estar logado para adicionar ao carrinho',
+        severity: 'warning'
+      });
+      navigate('/login', { state: { from: '/cursos' } });
+      return;
+    }
+
+    const turmaId = turmaSelecionada[curso.id];
+    
+    if (!turmaId) {
+      setSnackbar({
+        open: true,
+        message: 'Por favor, selecione uma turma antes de adicionar ao carrinho',
+        severity: 'warning'
+      });
+      return;
+    }
+
+    try {
+      const response = await api.post('/carrinho/adicionar', {
+        cursoId: curso.id,
+        turmaId: turmaId,
+      });
+
+      if (response.data.success) {
+        setSnackbar({
+          open: true,
+          message: response.data.mensagem,
+          severity: 'success'
+        });
+        // Atualiza contagem do carrinho
+        await buscarContagemCarrinho();
+      } else {
+        setSnackbar({
+          open: true,
+          message: response.data.mensagem,
+          severity: 'warning'
+        });
+      }
+    } catch (error: any) {
+      console.error('Erro ao adicionar ao carrinho:', error);
+      if (error.response?.status === 401) {
+        setSnackbar({
+          open: true,
+          message: 'Sessão expirada. Faça login novamente.',
+          severity: 'error'
+        });
+        handleLogout();
+      } else {
+        setSnackbar({
+          open: true,
+          message: error.response?.data?.mensagem || 'Erro ao adicionar curso ao carrinho',
+          severity: 'error'
+        });
+      }
+    }
   };
 
-  const cursosFiltrados = cursos.filter(curso => {
-    const matchesSearch = curso.titulo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         curso.descricao.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategoria = categoria === 'todos' || curso.categoria === categoria;
-    const matchesNivel = nivel === 'todos' || curso.nivel === nivel;
-    return matchesSearch && matchesCategoria && matchesNivel;
-  });
+  const handleTurmaChange = (cursoId: number, turmaId: number) => {
+    setTurmaSelecionada(prev => ({
+      ...prev,
+      [cursoId]: turmaId
+    }));
+  };
+
+  const formatarData = (dataString: string) => {
+    const data = new Date(dataString);
+    return data.toLocaleDateString('pt-BR');
+  };
+
+  // Carrega turmas quando o curso é renderizado
+  useEffect(() => {
+    cursos.forEach(curso => {
+      if (!turmasPorCurso[curso.id]) {
+        carregarTurmas(curso.id);
+      }
+    });
+  }, [cursos]);
+
+  useEffect(() => {
+    listarCursos();
+    if (isLoggedIn) {
+      buscarContagemCarrinho();
+    }
+  }, [isLoggedIn]);
 
   return (
     <>
-       <AppBar position="fixed" color="primary" elevation={3}>
-        <Container maxWidth="xl">
-          <Toolbar disableGutters>
-            <div className="nav-logo">
-              <BuildIcon sx={{ mr: 2, fontSize: 32 }} />
-              <Typography
-                variant="h6"
-                noWrap
-                component="a"
-                href="/"
-                className="logo-text"
-              >
-                CLUBE DO MECÂNICO
-              </Typography>
-            </div>
+      {/* Navbar condicional */}
+      {isLoggedIn ? renderLoggedInNavbar() : renderVisitorNavbar()}
 
-            {!isMobile ? (
-              <div className="nav-links">
-                <Button color="inherit" href="#inicio" className="nav-link">
-                  Início
-                </Button>
-                <Button color="inherit" href="#sobre" className="nav-link">
-                  Sobre
-                </Button>
-                <Button color="inherit" href="#cursos" className="nav-link">
-                  Cursos
-                </Button>
-                <Button color="inherit" href="#contato" className="nav-link">
-                  Contato
-                </Button>
-                <Button
-                  variant="contained"
-                  color="secondary"
-                  href="#inscricao"
-                  className="nav-button"
-                >
-                  Matricule-se
-                </Button>
-                <Button
-                color="inherit"
-                href="/login"
-                className="nav-link"
-                >
-                Login
-                </Button>
-              </div>
-            ) : (
-              <IconButton color="inherit">
-                <MenuIcon />
-              </IconButton>
-            )}
-          </Toolbar>
-        </Container>
-      </AppBar>
+      {/* Espaço para a navbar fixa */}
+      <Toolbar />
       
-      <Container maxWidth="xl" sx={{ mt: 10, mb: 6 }}>
+      <Container maxWidth="xl" sx={{ mt: 4, mb: 6 }}>
         {/* Cabeçalho */}
         <Box sx={{ 
           display: 'flex', 
@@ -269,13 +589,34 @@ const CursosPage: React.FC = () => {
           </Box>
           
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Button
-              variant="outlined"
-              startIcon={<ShoppingCart />}
-              onClick={() => navigate('/carrinho')}
-            >
-              Ver Carrinho
-            </Button>
+            {isLoggedIn && (
+              <Button
+                variant="outlined"
+                startIcon={<ShoppingCart />}
+                onClick={() => navigate('/carrinho')}
+              >
+                Ver Carrinho
+                {cartCount > 0 && (
+                  <Box
+                    sx={{
+                      ml: 1,
+                      backgroundColor: 'error.main',
+                      color: 'white',
+                      borderRadius: '50%',
+                      width: 24,
+                      height: 24,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '0.75rem',
+                      fontWeight: 'bold'
+                    }}
+                  >
+                    {cartCount}
+                  </Box>
+                )}
+              </Button>
+            )}
           </Box>
         </Box>
 
@@ -343,7 +684,6 @@ const CursosPage: React.FC = () => {
                 <MenuItem value="relevancia">Mais relevantes</MenuItem>
                 <MenuItem value="preco-crescente">Menor preço</MenuItem>
                 <MenuItem value="preco-decrescente">Maior preço</MenuItem>
-                <MenuItem value="avaliacao">Melhor avaliação</MenuItem>
                 <MenuItem value="duracao">Menor duração</MenuItem>
               </Select>
             </FormControl>
@@ -357,174 +697,182 @@ const CursosPage: React.FC = () => {
 
         {/* Lista de Cursos */}
         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
-          {cursosFiltrados.map((curso) => (
-            <Box 
-              key={curso.id} 
-              sx={{ 
-                flex: { xs: '1 1 100%', sm: '1 1 calc(50% - 12px)', lg: 'calc(33.333% - 16px)' },
-                minWidth: { xs: '100%', sm: '300px' }
-              }}
-            >
-              <Card sx={{ 
-                height: '100%', 
-                display: 'flex', 
-                flexDirection: 'column',
-                transition: 'transform 0.3s, box-shadow 0.3s',
-                '&:hover': {
-                  transform: 'translateY(-4px)',
-                  boxShadow: 6
-                }
-              }}>
-                {/* Badge de promoção */}
-                {curso.valorOriginal && (
-                  <Box sx={{ 
-                    position: 'absolute', 
-                    top: 16, 
-                    right: 16, 
-                    zIndex: 1 
-                  }}>
-                    <Chip 
-                      label={`${Math.round((1 - curso.valor/curso.valorOriginal) * 100)}% OFF`}
-                      color="error"
-                      size="small"
-                    />
-                  </Box>
-                )}
-                
-                {/* Imagem do curso */}
-                <CardMedia
-                  component="img"
-                  height="200"
-                  image={curso.imagem}
-                  alt={curso.titulo}
-                  sx={{ 
-                    objectFit: 'cover',
-                    borderBottom: `4px solid ${curso.cor}`
-                  }}
-                />
-                
-                <CardContent sx={{ flexGrow: 1 }}>
-                  {/* Categoria e nível */}
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-                    <Chip 
-                      label={curso.categoria}
-                      size="small"
-                      variant="outlined"
-                    />
-                    <Chip 
-                      label={curso.nivel}
-                      size="small"
-                      sx={{ 
-                        bgcolor: curso.nivel === 'Iniciante' ? '#e3f2fd' : 
-                                curso.nivel === 'Intermediário' ? '#f3e5f5' : '#ffebee',
-                        color: curso.nivel === 'Iniciante' ? '#1976d2' : 
-                               curso.nivel === 'Intermediário' ? '#7b1fa2' : '#d32f2f'
-                      }}
-                    />
-                  </Box>
+          {cursosFiltrados.map((curso) => {
+            const turmasDisponiveis = turmasPorCurso[curso.id] || [];
+            const temTurmas = turmasDisponiveis.length > 0;
+            
+            return (
+              <Box 
+                key={curso.id} 
+                sx={{ 
+                  flex: { xs: '1 1 100%', sm: '1 1 calc(50% - 12px)', lg: 'calc(33.333% - 16px)' },
+                  minWidth: { xs: '100%', sm: '300px' }
+                }}
+              >
+                <Card sx={{ 
+                  height: '100%', 
+                  display: 'flex', 
+                  flexDirection: 'column',
+                  transition: 'transform 0.3s, box-shadow 0.3s',
+                  '&:hover': {
+                    transform: 'translateY(-4px)',
+                    boxShadow: 6
+                  }
+                }}>
+                  {/* Imagem do curso */}
+                  <CardMedia
+                    component="img"
+                    height="200"
+                    image={curso.fotoUrl}
+                    alt={curso.nome}
+                    sx={{ 
+                      objectFit: 'cover',
+                      borderBottom: `4px solid ${curso.cor}`
+                    }}
+                  />
                   
-                  {/* Título e descrição */}
-                  <Typography variant="h6" fontWeight="bold" gutterBottom>
-                    {curso.titulo}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                    {curso.descricao}
-                  </Typography>
-                  
-                  {/* Avaliação */}
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                    <Rating value={curso.avaliacao} precision={0.1} readOnly size="small" />
-                    <Typography variant="body2" color="text.secondary">
-                      {curso.avaliacao} ({curso.totalAvaliacoes} avaliações)
-                    </Typography>
-                  </Box>
-                  
-                  {/* Destaques */}
-                  <Box sx={{ mb: 3 }}>
-                    {curso.destaques.slice(0, 2).map((destaque, idx) => (
-                      <Box 
-                        key={idx} 
+                  <CardContent sx={{ flexGrow: 1 }}>
+                    {/* Categoria e nível */}
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
+                      <Chip 
+                        label={curso.nivel}
+                        size="small"
                         sx={{ 
-                          display: 'flex', 
-                          alignItems: 'center', 
-                          gap: 1,
-                          mb: 0.5
+                          bgcolor: curso.nivel === 'Iniciante' ? '#e3f2fd' : 
+                                  curso.nivel === 'Intermediário' ? '#f3e5f5' : '#ffebee',
+                          color: curso.nivel === 'Iniciante' ? '#1976d2' : 
+                                curso.nivel === 'Intermediário' ? '#7b1fa2' : '#d32f2f'
                         }}
-                      >
-                        <Typography variant="body2" color="text.secondary">
-                          {destaque}
-                        </Typography>
-                      </Box>
-                    ))}
-                  </Box>
-                  
-                  {/* Detalhes */}
-                  <Box sx={{ 
-                    display: 'flex', 
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    mb: 3
-                  }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                        <AccessTime fontSize="small" color="action" />
-                        <Typography variant="body2">{curso.horas}h</Typography>
-                      </Box>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                        <Group fontSize="small" color="action" />
-                        <Typography variant="body2">{curso.maxAlunos} alunos</Typography>
-                      </Box>
+                      />
                     </Box>
                     
-                    <Box sx={{ textAlign: 'right' }}>
-                      {curso.valorOriginal && (
-                        <Typography variant="body2" color="text.secondary" sx={{ textDecoration: 'line-through' }}>
-                          R$ {curso.valorOriginal.toFixed(2)}
+                    {/* Título e descrição */}
+                    <Typography variant="h6" fontWeight="bold" gutterBottom>
+                      {curso.nome}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                      {curso.descricao}
+                    </Typography>
+                    
+                    {/* Destaques */}
+                    <Box sx={{ mb: 3 }}>
+                      {(curso.destaques || []).slice(0, 2).map((destaque, idx) => (
+                        <Box 
+                          key={idx} 
+                          sx={{ 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            gap: 1,
+                            mb: 0.5
+                          }}
+                        >
+                          <Typography variant="body2" color="text.secondary">
+                            {destaque}
+                          </Typography>
+                        </Box>
+                      ))}
+                    </Box>
+                    
+                    {/* Seletor de Turma */}
+                    <Box sx={{ mb: 3 }}>
+                      {loadingTurmas[curso.id] ? (
+                        <Typography variant="body2" color="text.secondary">
+                          Carregando turmas...
+                        </Typography>
+                      ) : temTurmas ? (
+                        <FormControl fullWidth size="small">
+                          <InputLabel id={`turma-label-${curso.id}`}>Selecione a turma</InputLabel>
+                          <Select
+                            labelId={`turma-label-${curso.id}`}
+                            value={turmaSelecionada[curso.id] || ''}
+                            label="Selecione a turma"
+                            onChange={(e) => handleTurmaChange(curso.id, Number(e.target.value))}
+                          >
+                            {turmasDisponiveis.map((turma) => (
+                              <MenuItem key={turma.id} value={turma.id}>
+                                <Box>
+                                  <Typography variant="body2">
+                                    {formatarData(turma.dataInicio)} - {turma.horario}
+                                  </Typography>
+                                  <Typography variant="caption" color="text.secondary">
+                                    {turma.vagasDisponiveis} vaga(s) - Prof. {turma.professor}
+                                  </Typography>
+                                </Box>
+                              </MenuItem>
+                            ))}
+                          </Select>
+                        </FormControl>
+                      ) : (
+                        <Typography variant="body2" color="error">
+                          Nenhuma turma disponível no momento
                         </Typography>
                       )}
-                      <Typography variant="h6" color="primary" fontWeight="bold">
-                        R$ {curso.valor.toFixed(2)}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        à vista
-                      </Typography>
                     </Box>
+                    
+                    {/* Detalhes */}
+                    <Box sx={{ 
+                      display: 'flex', 
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      mb: 3
+                    }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                          <AccessTime fontSize="small" color="action" />
+                          <Typography variant="body2">{curso.duracaoHoras}h</Typography>
+                        </Box>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                          <Group fontSize="small" color="action" />
+                          <Typography variant="body2">{curso.maxAlunos} alunos</Typography>
+                        </Box>
+                      </Box>
+                      
+                      <Box sx={{ textAlign: 'right' }}>
+                        <Typography variant="h6" color="primary" fontWeight="bold">
+                          R$ {curso.valor.toFixed(2)}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          à vista
+                        </Typography>
+                      </Box>
+                    </Box>
+                  </CardContent>
+                  
+                  {/* Ações */}
+                  <Box sx={{ 
+                    display: 'flex', 
+                    gap: 1, 
+                    p: 2, 
+                    pt: 0,
+                    borderTop: '1px solid',
+                    borderColor: 'divider'
+                  }}>
+                    <Button
+                      variant="contained"
+                      fullWidth
+                      onClick={() => handleAddToCart(curso)}
+                      startIcon={<ShoppingCart />}
+                      sx={{ 
+                        bgcolor: curso.cor,
+                        '&:hover': { bgcolor: curso.cor, opacity: 0.9 }
+                      }}
+                      disabled={!temTurmas || !turmaSelecionada[curso.id] || !isLoggedIn}
+                    >
+                      {!isLoggedIn ? 'Login para comprar' : !temTurmas ? 'Sem turmas' : 'Adicionar'}
+                    </Button>
+                    <Button
+                      variant="outlined"
+                      fullWidth
+                      onClick={() => handleVerCurso(curso.id)}
+                      endIcon={<KeyboardArrowRight />}
+                    >
+                      Detalhes
+                    </Button>
                   </Box>
-                </CardContent>
-                
-                {/* Ações */}
-                <Box sx={{ 
-                  display: 'flex', 
-                  gap: 1, 
-                  p: 2, 
-                  pt: 0,
-                  borderTop: '1px solid',
-                  borderColor: 'divider'
-                }}>
-                  <Button
-                    variant="contained"
-                    fullWidth
-                    onClick={() => handleAddToCart(curso)}
-                    startIcon={<ShoppingCart />}
-                    sx={{ 
-                      bgcolor: curso.cor,
-                      '&:hover': { bgcolor: curso.cor, opacity: 0.9 }
-                    }}
-                  >
-                    Adicionar
-                  </Button>
-                  <Button
-                    variant="outlined"
-                    fullWidth
-                    onClick={() => handleVerCurso(curso.id)}
-                    endIcon={<KeyboardArrowRight />}
-                  >
-                    Detalhes
-                  </Button>
-                </Box>
-              </Card>
-            </Box>
-          ))}
+                </Card>
+              </Box>
+            );
+          })}
         </Box>
 
         {/* Mensagem se não houver cursos */}
@@ -538,6 +886,21 @@ const CursosPage: React.FC = () => {
             </Typography>
           </Paper>
         )}
+        
+        <Snackbar 
+          open={snackbar.open} 
+          autoHideDuration={3000} 
+          onClose={() => setSnackbar({...snackbar, open: false})}
+          anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+        >
+          <Alert 
+            onClose={() => setSnackbar({...snackbar, open: false})} 
+            severity={snackbar.severity}
+            sx={{ width: '100%' }}
+          >
+            {snackbar.message}
+          </Alert>
+        </Snackbar>
       </Container>
     </>
   );

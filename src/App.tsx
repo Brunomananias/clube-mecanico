@@ -8,7 +8,7 @@ import { useEffect, useState } from "react";
 import CursosPage from './pages/CursosPage';
 import CursoDetalhePage from './pages/CursoDetalhePage';
 import CarrinhoPage from './pages/CarrinhoPage';
-import CadastroAlunoPage from './pages/CadastroAlunoPage';
+import CadastroAlunoPage from './pages/CadastroPage';
 import MercadoPagoCheckout from './pages/MercadoPagoCheckout';
 import PagamentoSucesso from './pages/pagamento/PagamentoSucesso';
 import PagamentoFalha from './pages/pagamento/PagamentoFalha';
@@ -17,30 +17,43 @@ import CursosAdminPage from './pages/administrador/CursoAdminPage';
 import { authService } from './services/authService'; // Importe o authService
 
 // Componente para rotas protegidas
+// Componente para rotas protegidas - VERSÃO CORRIGIDA
 const PrivateRoute = ({ children, requiredRole }: { children: React.ReactNode, requiredRole?: 0 | 1 }) => {
   const isAuthenticated = authService.isAuthenticated();
   
+  console.log('PrivateRoute - isAuthenticated:', isAuthenticated);
+  console.log('PrivateRoute - requiredRole:', requiredRole);
+  
   if (!isAuthenticated) {
+    console.log('PrivateRoute: Não autenticado, redirecionando para login');
     return <Navigate to="/login" replace />;
   }
   
   if (requiredRole !== undefined) {
     const user = authService.getCurrentUser();
+    console.log('PrivateRoute - user:', user);
+    console.log('PrivateRoute - user.tipo:', user?.tipo);
     
     if (!user) {
+      console.log('PrivateRoute: Usuário não encontrado');
       return <Navigate to="/login" replace />;
     }
     
     if (user.tipo !== requiredRole) {
+      console.log(`PrivateRoute: Tipo incorreto. Esperado: ${requiredRole}, Recebido: ${user.tipo}`);
+      
       // Redireciona para dashboard apropriado
       if (user.tipo === 1) {
+        console.log('Redirecionando para admin/dashboard');
         return <Navigate to="/admin/dashboard" replace />;
       } else {
+        console.log('Redirecionando para aluno/dashboard');
         return <Navigate to="/aluno/dashboard" replace />;
       }
     }
   }
   
+  console.log('PrivateRoute: Acesso permitido');
   return <>{children}</>;
 };
 
@@ -157,7 +170,7 @@ function App() {
         <Route 
           path="/aluno/dashboard" 
           element={
-            <PrivateRoute requiredRole="aluno">
+            <PrivateRoute requiredRole={0}>
               <AlunoDashboard />
             </PrivateRoute>
           } 
@@ -166,7 +179,7 @@ function App() {
         <Route 
           path="/admin/dashboard" 
           element={
-            <PrivateRoute requiredRole="admin">
+            <PrivateRoute requiredRole={1}>
               <AdminDashboard />
             </PrivateRoute>
           } 
@@ -175,7 +188,7 @@ function App() {
         <Route 
           path="/admin/cursos" 
           element={
-            <PrivateRoute requiredRole="admin">
+            <PrivateRoute requiredRole={1}>
               <CursosAdminPage />
             </PrivateRoute>
           } 

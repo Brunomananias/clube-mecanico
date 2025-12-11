@@ -32,6 +32,7 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { Dayjs } from 'dayjs';
 import 'dayjs/locale/pt-br';
+import api from '../../config/api';
 
 // Interfaces baseadas nos campos do banco
 interface TurmaFormData {
@@ -56,14 +57,25 @@ interface TurmaParaEnvio {
   status: 'ativa' | 'inativa' | 'encerrada';
 }
 
-interface Curso {
-  id: number;
-  titulo: string;
-}
-
 interface Professor {
   id: number;
   nome: string;
+}
+
+interface ICurso {
+  id: number;
+  codigo: string;
+  nome: string;
+  descricao: string;
+  fotoUrl: string;
+  valor: number;
+  duracaoHoras: string;
+  nivel: string;
+  maxAlunos: number;
+  conteudoProgramatico: string;
+  certificadoDisponivel: string;
+  destaques: string[];
+  cor: string;
 }
 
 interface CriarTurmaModalProps {
@@ -93,17 +105,12 @@ const CriarTurmaModal: React.FC<CriarTurmaModalProps> = ({
   const [submitError, setSubmitError] = useState<string>('');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
-
-  // Dados simulados (em produção viriam de API)
-  const [cursos] = useState<Curso[]>([
-    { id: 1, titulo: 'Mecânica de Bicicletas Básico' },
-    { id: 2, titulo: 'Manutenção de Freios Hidráulicos' },
-    { id: 3, titulo: 'Suspensão e Geometria Avançada' },
-    { id: 4, titulo: 'Transmissão e Câmbios' },
-    { id: 5, titulo: 'Mecânica de Bicicletas Elétricas' },
-    { id: 6, titulo: 'Gestão de Oficina de Bicicletas' },
-  ]);
-
+  const [cursos, setCursos] = useState<ICurso[]>([]);
+  const [snackbar, setSnackbar] = useState({
+      open: false,
+      message: '',
+      severity: 'success' as 'success' | 'error' | 'warning' | 'info'
+    });
   const [professores] = useState<Professor[]>([
     { id: 1, nome: 'Carlos Mendes' },
     { id: 2, nome: 'Ana Santos' },
@@ -111,6 +118,19 @@ const CriarTurmaModal: React.FC<CriarTurmaModalProps> = ({
     { id: 4, nome: 'Fernanda Lima' },
   ]);
 
+    const listarCursos = async () => {
+      try {
+        const response = await api.get<ICurso[]>("/cursos");
+        setCursos(response.data);
+      } catch (error) {
+        console.error('Erro ao carregar cursos:', error);
+        setSnackbar({
+          open: true,
+          message: 'Erro ao carregar cursos',
+          severity: 'error'
+        });
+      }
+    }
   // Resetar formulário quando modal abrir/fechar
   useEffect(() => {
     if (open) {
@@ -127,6 +147,7 @@ const CriarTurmaModal: React.FC<CriarTurmaModalProps> = ({
       setErrors({});
       setSubmitError('');
       setSuccess(false);
+      listarCursos();
     }
   }, [open]);
 
@@ -282,7 +303,7 @@ const CriarTurmaModal: React.FC<CriarTurmaModalProps> = ({
                     </MenuItem>
                     {cursos.map((curso) => (
                       <MenuItem key={curso.id} value={curso.id.toString()}>
-                        {curso.titulo}
+                        {curso.nome}
                       </MenuItem>
                     ))}
                   </Select>

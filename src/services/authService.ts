@@ -57,7 +57,20 @@ export const authService = {
       throw new Error('Resposta do servidor inválida');
       
     } catch (error: any) {
-      // ... tratamento de erro
+      console.error('Erro no login:', error);
+      
+      // Retornar um objeto LoginResponse mesmo em caso de erro
+      return {
+        token: '',
+        usuario: {
+          id: 0,
+          nome_Completo: '',
+          email: '',
+          cpf: '',
+          tipo: 0
+        },
+        expiresIn: 0
+      };
     }
   },
 
@@ -88,10 +101,10 @@ export const authService = {
     }
   },
 
-  getUserType(): 'aluno' | 'admin' | null {
+  getUserType(): 0 | 1 | null {
     const user = this.getCurrentUser();
     if (!user) return null;
     
-    return user.tipo === 1 ? 'admin' : 'aluno';
+    return user.tipo === 1 ? 1 : 0;
   }
 };
