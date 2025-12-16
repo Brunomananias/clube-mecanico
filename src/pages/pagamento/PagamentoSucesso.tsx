@@ -13,11 +13,9 @@ import {
   CheckCircle,
   ShoppingBag,
   Home,
-  Download,
-  Share,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
-import Navbar from '../components/navbar';
+import Navbar from '../components/Navbar';
 
 const PagamentoSucesso: React.FC = () => {
   const navigate = useNavigate();

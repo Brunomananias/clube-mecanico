@@ -18,8 +18,9 @@ import {
   Settings as SettingsIcon,
   ExitToApp as ExitToAppIcon,
   Dashboard as DashboardIcon,
-  Build as BuildIcon,
   Home as HomeIcon,
+  DirectionsBike as BikeIcon,
+  ShoppingCart as ShoppingCartIcon,
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 
@@ -49,6 +50,7 @@ const Navbar: React.FC<NavbarProps> = ({ userType, userName, userEmail }) => {
     localStorage.removeItem('isLoggedIn');
     localStorage.removeItem('userType');
     localStorage.removeItem('userEmail');
+    localStorage.removeItem('userName');
     navigate('/login');
     handleMenuClose();
   };
@@ -56,20 +58,29 @@ const Navbar: React.FC<NavbarProps> = ({ userType, userName, userEmail }) => {
   const navItems = userType === 'admin' 
     ? [
         { label: 'Dashboard', path: '/admin/dashboard', icon: <DashboardIcon /> },
+        { label: 'Cursos', path: '/admin/cursos', icon: <BikeIcon /> },
+        { label: 'Alunos', path: '/admin/alunos', icon: <PersonIcon /> },
       ]
     : [
         { label: 'Dashboard', path: '/aluno/dashboard', icon: <DashboardIcon /> },
+        { label: 'Meus Cursos', path: '/aluno/cursos', icon: <BikeIcon /> },
+        { label: 'Carrinho', path: '/carrinho', icon: <ShoppingCartIcon /> },
       ];
+
+  // Cores do tema
+  const primaryColor = '#333333'; // Preto/Cinza escuro
+  const secondaryColor = '#FF6B35'; // Laranja
+  const accentColor = '#666666'; // Cinza médio
 
   return (
     <AppBar 
       position="fixed" 
-      elevation={1}
+      elevation={2}
       sx={{ 
-        backgroundColor: userType === 'admin' ? 'secondary.main' : 'primary.main',
-        backgroundImage: userType === 'admin' 
-          ? 'linear-gradient(135deg, #9c27b0 0%, #7b1fa2 100%)'
-          : 'linear-gradient(135deg, #1976d2 0%, #1565c0 100%)',
+        backgroundColor: primaryColor,
+        backgroundImage: 'linear-gradient(135deg, #333333 0%, #444444 100%)',
+        borderBottom: `3px solid ${secondaryColor}`,
+        boxShadow: '0 4px 20px rgba(0, 0, 0, 0.2)',
       }}
     >
       <Toolbar>
@@ -79,22 +90,52 @@ const Navbar: React.FC<NavbarProps> = ({ userType, userName, userEmail }) => {
             size="large"
             edge="start"
             color="inherit"
-            onClick={() => navigate(userType === 'admin' ? '/admin/dashboard' : '/aluno/dashboard')}
-            sx={{ mr: 2 }}
+            onClick={() => navigate('/')}
+            sx={{ 
+              mr: 2,
+              color: secondaryColor,
+              '&:hover': {
+                backgroundColor: 'rgba(255, 107, 53, 0.1)',
+              }
+            }}
           >
-            <BuildIcon />
+            <BikeIcon sx={{ fontSize: 32 }} />
           </IconButton>
-          <Typography variant="h6" sx={{ fontWeight: 'bold', display: { xs: 'none', sm: 'block' } }}>
-            Clube do Mecânico
+          
+          <Typography 
+            variant="h6" 
+            sx={{ 
+              fontWeight: 800, 
+              display: { xs: 'none', sm: 'block' },
+              letterSpacing: '0.5px',
+              background: 'linear-gradient(90deg, #FFFFFF 0%, #FF9B73 100%)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              backgroundClip: 'text',
+            }}
+          >
+            CLUBE DO MECÂNICO
           </Typography>
-          <Typography variant="subtitle2" sx={{ ml: 2, display: { xs: 'none', md: 'block' } }}>
-            {userType === 'admin' ? 'Admin' : 'Aluno'}
-          </Typography>
+          
+          <Box
+            sx={{
+              ml: 2,
+              px: 1.5,
+              py: 0.5,
+              backgroundColor: secondaryColor,
+              borderRadius: '20px',
+              display: { xs: 'none', md: 'block' }
+            }}
+          >
+            <Typography variant="caption" sx={{ fontWeight: 'bold', color: 'white' }}>
+              {userType === 'admin' ? 'ADMIN' : 'ALUNO'}
+            </Typography>
+          </Box>
         </Box>
 
         {/* Navegação para desktop */}
         {!isMobile && (
-          <Box sx={{ display: 'flex', gap: 1 }}>
+          <Box sx={{ display: 'flex', gap: 1, mx: 2 }}>
             {navItems.map((item) => (
               <Button
                 key={item.label}
@@ -102,10 +143,20 @@ const Navbar: React.FC<NavbarProps> = ({ userType, userName, userEmail }) => {
                 startIcon={item.icon}
                 onClick={() => navigate(item.path)}
                 sx={{
-                  mx: 1,
-                  backgroundColor: isActive(item.path) ? 'rgba(255, 255, 255, 0.2)' : 'transparent',
+                  mx: 0.5,
+                  px: 2,
+                  borderRadius: '20px',
+                  backgroundColor: isActive(item.path) 
+                    ? 'rgba(255, 107, 53, 0.2)' 
+                    : 'transparent',
+                  color: isActive(item.path) ? secondaryColor : 'white',
+                  border: isActive(item.path) 
+                    ? `2px solid ${secondaryColor}`
+                    : '2px solid transparent',
+                  fontWeight: isActive(item.path) ? 700 : 500,
                   '&:hover': {
-                    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+                    backgroundColor: 'rgba(255, 107, 53, 0.15)',
+                    border: `2px solid ${secondaryColor}`,
                   },
                 }}
               >
@@ -115,41 +166,75 @@ const Navbar: React.FC<NavbarProps> = ({ userType, userName, userEmail }) => {
           </Box>
         )}
 
-        {/* Ícones de ação */}
-        <Box sx={{ display: 'flex', alignItems: 'center', ml: 2 }}>
+        {/* Perfil e Menu */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
           {!isMobile && (
-            <Box sx={{ display: 'flex', alignItems: 'center', ml: 2 }}>
-              <Avatar
-                sx={{
-                  width: 36,
-                  height: 36,
-                  bgcolor: 'white',
-                  color: userType === 'admin' ? 'secondary.main' : 'primary.main',
-                  mr: 1,
-                }}
-              >
-                <PersonIcon />
-              </Avatar>
-              <Box>
-                <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
-                  {userName || (userType === 'admin' ? 'Administrador' : 'Aluno')}
-                </Typography>
-                <Typography variant="caption" sx={{ opacity: 0.8 }}>
-                  {userEmail || `${userType}@clube.com`}
-                </Typography>
+            <>
+              <Box sx={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                borderRadius: '20px',
+                padding: '4px 12px',
+                border: '1px solid rgba(255, 255, 255, 0.2)',
+              }}>
+                <Avatar
+                  sx={{
+                    width: 36,
+                    height: 36,
+                    bgcolor: secondaryColor,
+                    color: 'white',
+                    mr: 1.5,
+                    border: '2px solid white',
+                  }}
+                >
+                  <PersonIcon />
+                </Avatar>
+                <Box>
+                  <Typography variant="body2" sx={{ fontWeight: 'bold', color: 'white' }}>
+                    {userName || (userType === 'admin' ? 'Administrador' : 'Aluno')}
+                  </Typography>
+                  <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>
+                    {userEmail || `${userType}@clube.com`}
+                  </Typography>
+                </Box>
               </Box>
+              
               <IconButton
                 color="inherit"
                 onClick={handleMenuOpen}
-                sx={{ ml: 1 }}
+                sx={{ 
+                  color: 'white',
+                  backgroundColor: 'rgba(255, 107, 53, 0.2)',
+                  '&:hover': {
+                    backgroundColor: secondaryColor,
+                  }
+                }}
               >
                 <SettingsIcon />
               </IconButton>
-            </Box>
+            </>
+          )}
+          
+          {/* Botão de menu para mobile */}
+          {isMobile && (
+            <IconButton
+              color="inherit"
+              onClick={handleMenuOpen}
+              sx={{ 
+                color: 'white',
+                backgroundColor: 'rgba(255, 107, 53, 0.3)',
+                '&:hover': {
+                  backgroundColor: secondaryColor,
+                }
+              }}
+            >
+              <PersonIcon />
+            </IconButton>
           )}
         </Box>
 
-        {/* Menu dropdown para mobile */}
+        {/* Menu dropdown */}
         <Menu
           anchorEl={anchorEl}
           open={Boolean(anchorEl)}
@@ -157,10 +242,61 @@ const Navbar: React.FC<NavbarProps> = ({ userType, userName, userEmail }) => {
           PaperProps={{
             sx: {
               mt: 1.5,
-              minWidth: 200,
+              minWidth: 280,
+              backgroundColor: primaryColor,
+              color: 'white',
+              border: `1px solid ${accentColor}`,
+              borderRadius: '12px',
+              overflow: 'hidden',
+              boxShadow: '0 10px 40px rgba(0, 0, 0, 0.3)',
             },
           }}
         >
+          {/* Informações do usuário */}
+          <MenuItem 
+            disabled
+            sx={{ 
+              backgroundColor: 'rgba(255, 255, 255, 0.05)',
+              opacity: 1,
+              '&.Mui-disabled': {
+                opacity: 1,
+              }
+            }}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, width: '100%' }}>
+              <Avatar sx={{ 
+                width: 48, 
+                height: 48,
+                bgcolor: secondaryColor,
+                border: '2px solid white',
+              }}>
+                <PersonIcon />
+              </Avatar>
+              <Box>
+                <Typography variant="body1" sx={{ fontWeight: 'bold', color: 'white' }}>
+                  {userName || (userType === 'admin' ? 'Administrador' : 'Aluno')}
+                </Typography>
+                <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>
+                  {userEmail || `${userType}@clube.com`}
+                </Typography>
+                <Box sx={{ 
+                  mt: 0.5,
+                  display: 'inline-block',
+                  px: 1.5,
+                  py: 0.25,
+                  backgroundColor: secondaryColor,
+                  borderRadius: '12px',
+                }}>
+                  <Typography variant="caption" sx={{ color: 'white', fontWeight: 'bold' }}>
+                    {userType === 'admin' ? 'Administrador' : 'Aluno'}
+                  </Typography>
+                </Box>
+              </Box>
+            </Box>
+          </MenuItem>
+
+          <Divider sx={{ borderColor: accentColor }} />
+
           {/* Navegação para mobile */}
           {isMobile && navItems.map((item) => (
             <MenuItem 
@@ -169,64 +305,80 @@ const Navbar: React.FC<NavbarProps> = ({ userType, userName, userEmail }) => {
                 navigate(item.path);
                 handleMenuClose();
               }}
-              selected={isActive(item.path)}
+              sx={{
+                py: 1.5,
+                backgroundColor: isActive(item.path) 
+                  ? 'rgba(255, 107, 53, 0.15)' 
+                  : 'transparent',
+                color: isActive(item.path) ? secondaryColor : 'white',
+                '&:hover': {
+                  backgroundColor: 'rgba(255, 107, 53, 0.1)',
+                }
+              }}
             >
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                {item.icon}
-                {item.label}
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, width: '100%' }}>
+                <Box sx={{ color: isActive(item.path) ? secondaryColor : accentColor }}>
+                  {item.icon}
+                </Box>
+                <Typography variant="body2" sx={{ fontWeight: isActive(item.path) ? 700 : 500 }}>
+                  {item.label}
+                </Typography>
               </Box>
             </MenuItem>
           ))}
 
-          {isMobile && <Divider />}
-
-          {/* Informações do usuário */}
-          <MenuItem disabled>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Avatar sx={{ width: 32, height: 32 }}>
-                <PersonIcon />
-              </Avatar>
-              <Box>
-                <Typography variant="body2">
-                  {userName || (userType === 'admin' ? 'Administrador' : 'Aluno')}
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  {userEmail || `${userType}@clube.com`}
-                </Typography>
-              </Box>
-            </Box>
-          </MenuItem>
-
-          <Divider />
+          {isMobile && <Divider sx={{ borderColor: accentColor }} />}
 
           {/* Links comuns */}
           <MenuItem onClick={() => {
             navigate(userType === 'admin' ? '/admin/perfil' : '/aluno/perfil');
             handleMenuClose();
+          }}
+          sx={{
+            py: 1.5,
+            '&:hover': {
+              backgroundColor: 'rgba(255, 107, 53, 0.1)',
+            }
           }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <PersonIcon fontSize="small" />
-              Meu Perfil
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <PersonIcon sx={{ color: accentColor }} />
+              <Typography variant="body2">Meu Perfil</Typography>
             </Box>
           </MenuItem>
 
           <MenuItem onClick={() => {
             navigate('/');
             handleMenuClose();
+          }}
+          sx={{
+            py: 1.5,
+            '&:hover': {
+              backgroundColor: 'rgba(255, 107, 53, 0.1)',
+            }
           }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <HomeIcon fontSize="small" />
-              Site Principal
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <HomeIcon sx={{ color: accentColor }} />
+              <Typography variant="body2">Site Principal</Typography>
             </Box>
           </MenuItem>
 
-          <Divider />
+          <Divider sx={{ borderColor: accentColor }} />
 
           {/* Logout */}
-          <MenuItem onClick={handleLogout} sx={{ color: 'error.main' }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <ExitToAppIcon fontSize="small" />
-              Sair
+          <MenuItem 
+            onClick={handleLogout} 
+            sx={{ 
+              py: 1.5,
+              color: secondaryColor,
+              fontWeight: 700,
+              '&:hover': {
+                backgroundColor: 'rgba(255, 107, 53, 0.15)',
+              }
+            }}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <ExitToAppIcon />
+              <Typography variant="body2">Sair</Typography>
             </Box>
           </MenuItem>
         </Menu>

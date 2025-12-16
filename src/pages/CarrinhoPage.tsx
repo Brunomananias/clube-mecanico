@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useEffect } from "react";
 import {
   Container,
@@ -43,7 +44,7 @@ import api from "../config/api";
 
 interface ItemCarrinho {
   id: number;
-  carrinhoId: number; // ID do item no carrinho_temporario
+  carrinhoId: number;
   titulo: string;
   valor: number;
   duracaoHoras: string;
@@ -71,10 +72,11 @@ const CarrinhoPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [loadingCarrinho, setLoadingCarrinho] = useState(true);
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
-  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<
-    string | null
-  >(null);
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string | null>(null);
   const [carrinho, setCarrinho] = useState<ItemCarrinho[]>([]);
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState("");
+  const [pedidoId, setPedidoId] = useState<number | null>(null);
 
   // Métodos de pagamento
   const paymentMethods: PaymentMethod[] = [
@@ -105,17 +107,16 @@ const CarrinhoPage: React.FC = () => {
       const response = await api.get("/carrinho/itens");
 
       if (response.data.success) {
-        // Transforma os dados da API para o formato esperado
         const itens = response.data.dados.itens.map((item: any) => ({
-          id: item.cursoId, // Usar cursoId como id para compatibilidade
-          carrinhoId: item.id, // ID do item no carrinho
+          id: item.cursoId,
+          carrinhoId: item.id,
           titulo: item.titulo || item.nome,
           valor: item.valor,
           duracaoHoras: item.duracaoHoras || "Não informado",
           imagem: item.imagem || item.fotoUrl || "/default-course.jpg",
           cursoId: item.cursoId,
           turmaId: item.turmaId,
-          quantidade: 1, // Por enquanto sempre 1, pode ajustar depois
+          quantidade: 1,
           dataAdicao: item.dataAdicao,
         }));
 
@@ -143,15 +144,24 @@ const CarrinhoPage: React.FC = () => {
     buscarCarrinho();
   }, []);
 
+  // Verificar se há um pedido pendente na URL
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const pedidoParam = urlParams.get('pedidoId');
+    if (pedidoParam) {
+      setPedidoId(parseInt(pedidoParam));
+      verificarStatusPedido(parseInt(pedidoParam));
+    }
+  }, []);
+
   const adicionarAoCarrinho = async (cursoId: number) => {
     try {
       const response = await api.post("/carrinho/adicionar", {
         cursoId,
-        turmaId: null, // Você pode ajustar para pegar a turma se necessário
+        turmaId: null,
       });
 
       if (response.data.success) {
-        // Recarrega o carrinho após adicionar
         await buscarCarrinho();
       }
     } catch (error) {
@@ -164,7 +174,6 @@ const CarrinhoPage: React.FC = () => {
       const response = await api.delete(`/carrinho/remover/${carrinhoId}`);
 
       if (response.data.success) {
-        // Remove localmente ou recarrega
         setCarrinho(carrinho.filter((item) => item.carrinhoId !== carrinhoId));
       }
     } catch (error) {
@@ -174,17 +183,13 @@ const CarrinhoPage: React.FC = () => {
     }
   };
 
-  const handleUpdateQuantity = async (
-    carrinhoId: number,
-    novaQuantidade: number
-  ) => {
+  const handleUpdateQuantity = async (carrinhoId: number, novaQuantidade: number) => {
     if (novaQuantidade < 1) {
-      // Se quantidade for zero, remove o item
       handleRemoveItem(carrinhoId);
       return;
     }
 
-    // Atualiza localmente (se sua API suportar atualizar quantidade)
+    // Atualiza localmente
     setCarrinho(
       carrinho.map((item) =>
         item.carrinhoId === carrinhoId
@@ -219,79 +224,115 @@ const CarrinhoPage: React.FC = () => {
   };
 
   const handlePayment = async () => {
-    if (!selectedPaymentMethod) {
-      setSnackbarMessage("Selecione um método de pagamento");
-      setSnackbarOpen(true);
-      return;
-    }
-
     if (carrinho.length === 0) {
       setSnackbarMessage("Carrinho vazio");
       setSnackbarOpen(true);
       return;
     }
 
+    if (!selectedPaymentMethod) {
+      setSnackbarMessage("Selecione um método de pagamento");
+      setSnackbarOpen(true);
+      return;
+    }
+
     setLoading(true);
+    setPaymentDialogOpen(false);
 
     try {
-      // 1. Criar pedido no seu sistema
-      const pedidoResponse = await api.post("/pedidos/criar", {
-        itens: carrinho.map((item) => ({
+      // Calcular total
+      const subtotal = carrinho.reduce(
+        (total, item) => total + item.valor * item.quantidade,
+        0
+      );
+      const descontoCupom = cupomAplicado ? subtotal * 0.1 : 0;
+      const total = subtotal - descontoCupom;
+
+      // Chamar API para criar pagamento no backend
+      const response = await api.post("/pagamento/criar-pagamento", {
+        valorCurso: total,
+        metodoPagamento: selectedPaymentMethod,
+        cupom: cupomAplicado ? cupom : null,
+        itens: carrinho.map(item => ({
           cursoId: item.cursoId,
-          turmaId: item.turmaId,
-          quantidade: item.quantidade,
-          precoUnitario: item.valor,
-        })),
+          titulo: item.titulo,
+          quantidade: item.quantidade
+        }))
       });
 
-      if (!pedidoResponse.data.success) {
-        throw new Error("Erro ao criar pedido");
-      }
-
-      const pedidoId = pedidoResponse.data.dados.pedidoId;
-
-      // 2. Criar preferência no Mercado Pago
-      const mpResponse = await api.post("/pagamento/mercadopago/preference", {
-        pedidoId: pedidoId,
-        items: carrinho.map((item) => ({
-          id: item.cursoId,
-          title: item.titulo,
-          quantity: item.quantidade,
-          unit_price: item.valor,
-          description: `Curso: ${item.titulo}`,
-        })),
-        paymentMethod: selectedPaymentMethod,
-      });
-
-      if (mpResponse.data.success && mpResponse.data.dados.init_point) {
-        // Redireciona para o Mercado Pago
-        window.location.href = mpResponse.data.dados.init_point;
+      if (response.data.success) {
+        if (response.data.url) {
+          // Salvar pedidoId para verificação posterior
+          if (response.data.pedidoId) {
+            setPedidoId(response.data.pedidoId);
+            localStorage.setItem('ultimoPedidoId', response.data.pedidoId);
+          }
+          
+          // Redireciona para o Mercado Pago
+          window.location.href = response.data.url;
+        } else {
+          // Se não tem URL, mostrar mensagem de sucesso
+          setActiveStep(2);
+          setSnackbarMessage("Pedido criado com sucesso!");
+          setSnackbarOpen(true);
+          
+          // Limpar carrinho local
+          setCarrinho([]);
+        }
       } else {
-        throw new Error("Erro ao criar pagamento");
+        throw new Error(response.data.message || "Erro ao criar pagamento");
       }
     } catch (error: any) {
-      console.error("Erro ao processar pagamento:", error);
+      console.error("Erro:", error);
       setSnackbarMessage(
-        error.response?.data?.mensagem || "Erro ao processar pagamento"
+        error.response?.data?.message || 
+        error.message || 
+        "Erro ao processar pagamento. Tente novamente."
       );
       setSnackbarOpen(true);
+      setActiveStep(0);
+    } finally {
       setLoading(false);
     }
   };
 
-  // Snackbar state
-  const [snackbarOpen, setSnackbarOpen] = useState(false);
-  const [snackbarMessage, setSnackbarMessage] = useState("");
+  const verificarStatusPedido = async (pedidoId: number) => {
+    try {
+      const response = await api.get(`/pagamento/verificar-status/${pedidoId}`);
+      
+      if (response.data.pedido === "Aprovado") {
+        setSnackbarMessage("Pagamento confirmado! Você já pode acessar seus cursos.");
+        setSnackbarOpen(true);
+        setActiveStep(2);
+        
+        // Limpar carrinho
+        setCarrinho([]);
+        localStorage.removeItem('ultimoPedidoId');
+        
+        // Redirecionar para meus cursos após 3 segundos
+        setTimeout(() => {
+          navigate("/meus-cursos");
+        }, 3000);
+      }
+    } catch (error) {
+      console.error("Erro ao verificar status:", error);
+    }
+  };
+
+  const handleVoltarParaCarrinho = () => {
+    setActiveStep(0);
+    setSelectedPaymentMethod(null);
+  };
+
+  const steps = ["Carrinho", "Pagamento", "Confirmação"];
 
   // Cálculos
   const subtotal = carrinho.reduce(
     (total, item) => total + item.valor * item.quantidade,
     0
   );
-  const descontoCupom = cupomAplicado ? subtotal * 0.1 : 0; // 10% de desconto
+  const descontoCupom = cupomAplicado ? subtotal * 0.1 : 0;
   const total = subtotal - descontoCupom;
-
-  const steps = ["Carrinho", "Pagamento", "Confirmação"];
 
   if (loadingCarrinho) {
     return (
@@ -308,11 +349,55 @@ const CarrinhoPage: React.FC = () => {
     );
   }
 
+  // Página de confirmação
+  if (activeStep === 2) {
+    return (
+      <Container maxWidth="md" sx={{ mt: 12, mb: 6 }}>
+        <Paper sx={{ p: 4, textAlign: "center" }}>
+          <CheckCircle sx={{ fontSize: 80, color: "success.main", mb: 3 }} />
+          <Typography variant="h4" fontWeight="bold" gutterBottom>
+            Compra Finalizada com Sucesso!
+          </Typography>
+          <Typography variant="body1" color="text.secondary" gutterBottom>
+            Obrigado pela sua compra. O pagamento foi processado com sucesso.
+          </Typography>
+          
+          {pedidoId && (
+            <Box sx={{ mt: 3, p: 2, bgcolor: "grey.50", borderRadius: 1 }}>
+              <Typography variant="body2">
+                Número do pedido: <strong>#{pedidoId}</strong>
+              </Typography>
+              <Typography variant="body2">
+                Valor total: <strong>R$ {total.toFixed(2)}</strong>
+              </Typography>
+            </Box>
+          )}
+          
+          <Box sx={{ mt: 4, display: "flex", gap: 2, justifyContent: "center" }}>
+            <Button
+              variant="contained"
+              onClick={() => navigate("/meus-cursos")}
+            >
+              Ver Meus Cursos
+            </Button>
+            <Button
+              variant="outlined"
+              onClick={() => navigate("/cursos")}
+            >
+              Continuar Comprando
+            </Button>
+          </Box>
+          
+          <Alert severity="info" sx={{ mt: 4 }}>
+            Você receberá um e-mail com os detalhes da compra e acesso aos cursos.
+          </Alert>
+        </Paper>
+      </Container>
+    );
+  }
+
   return (
     <>
-      {/* Navbar - você pode manter o seu componente Navbar */}
-      {/* <Navbar userType="aluno" /> */}
-
       <Container maxWidth="lg" sx={{ mt: 12, mb: 6 }}>
         {/* Stepper */}
         <Box sx={{ mb: 4 }}>
@@ -325,6 +410,17 @@ const CarrinhoPage: React.FC = () => {
           </Stepper>
         </Box>
 
+        {/* Botão de voltar quando no passo 1 */}
+        {activeStep === 1 && (
+          <Button
+            startIcon={<ArrowBack />}
+            onClick={handleVoltarParaCarrinho}
+            sx={{ mb: 3 }}
+          >
+            Voltar para Carrinho
+          </Button>
+        )}
+
         <Box
           sx={{
             display: "flex",
@@ -333,352 +429,400 @@ const CarrinhoPage: React.FC = () => {
             alignItems: "flex-start",
           }}
         >
-          {/* Lista de itens */}
-          <Box sx={{ flex: "1 1 600px" }}>
-            <Paper sx={{ p: 3, mb: 3 }}>
-              <Box
-                sx={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  mb: 3,
-                }}
-              >
-                <Typography variant="h5" fontWeight="bold">
-                  <ShoppingCart sx={{ verticalAlign: "middle", mr: 2 }} />
-                  Meu Carrinho
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  {carrinho.length} {carrinho.length === 1 ? "item" : "itens"}
-                </Typography>
-              </Box>
-
-              {carrinho.length === 0 ? (
-                <Box sx={{ textAlign: "center", py: 4 }}>
-                  <ShoppingCart
-                    sx={{ fontSize: 48, color: "text.secondary", mb: 2 }}
-                  />
-                  <Typography variant="h6" color="text.secondary" gutterBottom>
-                    Seu carrinho está vazio
+          {/* Lista de itens - só mostra no passo 0 */}
+          {activeStep === 0 && (
+            <Box sx={{ flex: "1 1 600px" }}>
+              <Paper sx={{ p: 3, mb: 3 }}>
+                <Box
+                  sx={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    mb: 3,
+                  }}
+                >
+                  <Typography variant="h5" fontWeight="bold">
+                    <ShoppingCart sx={{ verticalAlign: "middle", mr: 2 }} />
+                    Meu Carrinho
                   </Typography>
-                  <Button
-                    variant="contained"
-                    startIcon={<ArrowBack />}
-                    onClick={() => navigate("/cursos")}
-                  >
-                    Continuar Comprando
-                  </Button>
+                  <Typography variant="body2" color="text.secondary">
+                    {carrinho.length} {carrinho.length === 1 ? "item" : "itens"}
+                  </Typography>
                 </Box>
-              ) : (
-                <List>
-                  {carrinho.map((item) => (
-                    <React.Fragment key={item.carrinhoId}>
-                      <ListItem alignItems="flex-start" sx={{ py: 2 }}>
-                        <Box
-                          sx={{
-                            width: 80,
-                            height: 80,
-                            mr: 3,
-                            borderRadius: 1,
-                            overflow: "hidden",
-                            flexShrink: 0,
-                          }}
-                        >
-                          <Box
-                            component="img"
-                            src={item.imagem}
-                            alt={item.titulo}
-                            onError={(e) => {
-                              const target = e.target as HTMLImageElement;
-                              target.src = "/default-course.jpg";
-                            }}
-                            sx={{
-                              width: "100%",
-                              height: "100%",
-                              objectFit: "cover",
-                            }}
-                          />
-                        </Box>
 
-                        <ListItemText
-                          primary={
-                            <Typography variant="h6" fontWeight="medium">
-                              {item.titulo}
-                            </Typography>
-                          }
-                          secondary={
-                            <Box sx={{ mt: 1 }}>
-                              <Typography
-                                variant="body2"
-                                color="text.secondary"
-                                sx={{ mb: 1 }}
-                              >
-                                Duração: {item.duracaoHoras}
+                {carrinho.length === 0 ? (
+                  <Box sx={{ textAlign: "center", py: 4 }}>
+                    <ShoppingCart
+                      sx={{ fontSize: 48, color: "text.secondary", mb: 2 }}
+                    />
+                    <Typography variant="h6" color="text.secondary" gutterBottom>
+                      Seu carrinho está vazio
+                    </Typography>
+                    <Button
+                      variant="contained"
+                      startIcon={<ArrowBack />}
+                      onClick={() => navigate("/cursos")}
+                    >
+                      Continuar Comprando
+                    </Button>
+                  </Box>
+                ) : (
+                  <List>
+                    {carrinho.map((item) => (
+                      <React.Fragment key={item.carrinhoId}>
+                        <ListItem alignItems="flex-start" sx={{ py: 2 }}>
+                          <Box
+                            sx={{
+                              width: 80,
+                              height: 80,
+                              mr: 3,
+                              borderRadius: 1,
+                              overflow: "hidden",
+                              flexShrink: 0,
+                            }}
+                          >
+                            <Box
+                              component="img"
+                              src={item.imagem}
+                              alt={item.titulo}
+                              onError={(e) => {
+                                const target = e.target as HTMLImageElement;
+                                target.src = "/default-course.jpg";
+                              }}
+                              sx={{
+                                width: "100%",
+                                height: "100%",
+                                objectFit: "cover",
+                              }}
+                            />
+                          </Box>
+
+                          <ListItemText
+                            primary={
+                              <Typography variant="h6" fontWeight="medium">
+                                {item.titulo}
                               </Typography>
-                              <Box
-                                sx={{
-                                  display: "flex",
-                                  alignItems: "center",
-                                  gap: 2,
-                                }}
-                              >
+                            }
+                            secondary={
+                              <Box sx={{ mt: 1 }}>
+                                <Typography
+                                  variant="body2"
+                                  color="text.secondary"
+                                  sx={{ mb: 1 }}
+                                >
+                                  Duração: {item.duracaoHoras}
+                                </Typography>
                                 <Box
                                   sx={{
                                     display: "flex",
                                     alignItems: "center",
-                                    border: "1px solid",
-                                    borderColor: "divider",
-                                    borderRadius: 1,
+                                    gap: 2,
                                   }}
                                 >
-                                  <IconButton
-                                    size="small"
-                                    onClick={() =>
-                                      handleUpdateQuantity(
-                                        item.carrinhoId,
-                                        item.quantidade - 1
-                                      )
-                                    }
+                                  <Box
+                                    sx={{
+                                      display: "flex",
+                                      alignItems: "center",
+                                      border: "1px solid",
+                                      borderColor: "divider",
+                                      borderRadius: 1,
+                                    }}
                                   >
-                                    <Remove fontSize="small" />
-                                  </IconButton>
-                                  <Typography sx={{ px: 2 }}>
-                                    {item.quantidade}
-                                  </Typography>
-                                  <IconButton
+                                    <IconButton
+                                      size="small"
+                                      onClick={() =>
+                                        handleUpdateQuantity(
+                                          item.carrinhoId,
+                                          item.quantidade - 1
+                                        )
+                                      }
+                                    >
+                                      <Remove fontSize="small" />
+                                    </IconButton>
+                                    <Typography sx={{ px: 2 }}>
+                                      {item.quantidade}
+                                    </Typography>
+                                    <IconButton
+                                      size="small"
+                                      onClick={() =>
+                                        handleUpdateQuantity(
+                                          item.carrinhoId,
+                                          item.quantidade + 1
+                                        )
+                                      }
+                                    >
+                                      <Add fontSize="small" />
+                                    </IconButton>
+                                  </Box>
+                                  <Chip
+                                    label={`R$ ${(
+                                      item.valor * item.quantidade
+                                    ).toFixed(2)}`}
+                                    color="primary"
                                     size="small"
-                                    onClick={() =>
-                                      handleUpdateQuantity(
-                                        item.carrinhoId,
-                                        item.quantidade + 1
-                                      )
-                                    }
-                                  >
-                                    <Add fontSize="small" />
-                                  </IconButton>
+                                  />
                                 </Box>
-                                <Chip
-                                  label={`R$ ${(
-                                    item.valor * item.quantidade
-                                  ).toFixed(2)}`}
-                                  color="primary"
-                                  size="small"
-                                />
                               </Box>
-                            </Box>
-                          }
-                        />
+                            }
+                          />
 
-                        <ListItemSecondaryAction>
-                          <IconButton
-                            edge="end"
-                            onClick={() => handleRemoveItem(item.carrinhoId)}
-                            color="error"
-                          >
-                            <Delete />
-                          </IconButton>
-                        </ListItemSecondaryAction>
-                      </ListItem>
-                      <Divider />
-                    </React.Fragment>
-                  ))}
-                </List>
-              )}
-            </Paper>
+                          <ListItemSecondaryAction>
+                            <IconButton
+                              edge="end"
+                              onClick={() => handleRemoveItem(item.carrinhoId)}
+                              color="error"
+                            >
+                              <Delete />
+                            </IconButton>
+                          </ListItemSecondaryAction>
+                        </ListItem>
+                        <Divider />
+                      </React.Fragment>
+                    ))}
+                  </List>
+                )}
+              </Paper>
 
-            {/* Cupom de desconto */}
-            <Paper sx={{ p: 3 }}>
-              <Typography variant="h6" fontWeight="bold" gutterBottom>
-                Cupom de desconto
-              </Typography>
-              <Box sx={{ display: "flex", gap: 2 }}>
-                <TextField
-                  placeholder="Digite seu cupom"
-                  value={cupom}
-                  onChange={(e) => setCupom(e.target.value)}
-                  disabled={cupomAplicado}
-                  sx={{ flex: 1 }}
-                  InputProps={{
-                    endAdornment: cupomAplicado && (
-                      <LocalOffer color="success" />
-                    ),
-                  }}
-                />
-                <Button
-                  variant="outlined"
-                  onClick={handleAplicarCupom}
-                  disabled={cupomAplicado || !cupom}
-                >
-                  {cupomAplicado ? "Aplicado" : "Aplicar"}
-                </Button>
-              </Box>
+              {/* Cupom de desconto */}
+              <Paper sx={{ p: 3 }}>
+                <Typography variant="h6" fontWeight="bold" gutterBottom>
+                  Cupom de desconto
+                </Typography>
+                <Box sx={{ display: "flex", gap: 2 }}>
+                  <TextField
+                    placeholder="Digite seu cupom"
+                    value={cupom}
+                    onChange={(e) => setCupom(e.target.value)}
+                    disabled={cupomAplicado}
+                    sx={{ flex: 1 }}
+                    InputProps={{
+                      endAdornment: cupomAplicado && (
+                        <LocalOffer color="success" />
+                      ),
+                    }}
+                  />
+                  <Button
+                    variant="outlined"
+                    onClick={handleAplicarCupom}
+                    disabled={cupomAplicado || !cupom}
+                  >
+                    {cupomAplicado ? "Aplicado" : "Aplicar"}
+                  </Button>
+                </Box>
 
-              {cupomAplicado && (
-                <Alert severity="success" sx={{ mt: 2 }}>
-                  Cupom aplicado com sucesso! 10% de desconto.
-                </Alert>
-              )}
-            </Paper>
-          </Box>
+                {cupomAplicado && (
+                  <Alert severity="success" sx={{ mt: 2 }}>
+                    Cupom aplicado com sucesso! 10% de desconto.
+                  </Alert>
+                )}
+              </Paper>
+            </Box>
+          )}
 
           {/* Resumo do pedido */}
           <Box sx={{ flex: "1 1 300px", position: "sticky", top: 20 }}>
             <Paper sx={{ p: 3 }}>
               <Typography variant="h5" fontWeight="bold" gutterBottom>
-                Resumo do Pedido
+                {activeStep === 0 ? "Resumo do Pedido" : "Finalizar Pagamento"}
               </Typography>
 
-              <Box sx={{ mb: 3 }}>
-                {/* Subtotal */}
-                <Box
-                  sx={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    mb: 1,
-                  }}
-                >
-                  <Typography variant="body2" color="text.secondary">
-                    Subtotal
-                  </Typography>
-                  <Typography variant="body1">
-                    R$ {subtotal.toFixed(2)}
-                  </Typography>
-                </Box>
+              {activeStep === 0 && (
+                <>
+                  <Box sx={{ mb: 3 }}>
+                    {/* Subtotal */}
+                    <Box
+                      sx={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        mb: 1,
+                      }}
+                    >
+                      <Typography variant="body2" color="text.secondary">
+                        Subtotal
+                      </Typography>
+                      <Typography variant="body1">
+                        R$ {subtotal.toFixed(2)}
+                      </Typography>
+                    </Box>
 
-                {/* Desconto */}
-                {descontoCupom > 0 && (
+                    {/* Desconto */}
+                    {descontoCupom > 0 && (
+                      <Box
+                        sx={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          mb: 1,
+                        }}
+                      >
+                        <Typography variant="body2" color="text.secondary">
+                          Desconto cupom
+                        </Typography>
+                        <Typography variant="body1" color="success.main">
+                          - R$ {descontoCupom.toFixed(2)}
+                        </Typography>
+                      </Box>
+                    )}
+
+                    <Divider sx={{ my: 2 }} />
+
+                    {/* Total */}
+                    <Box
+                      sx={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        mb: 3,
+                      }}
+                    >
+                      <Typography variant="h6" fontWeight="bold">
+                        Total
+                      </Typography>
+                      <Typography variant="h5" fontWeight="bold" color="primary">
+                        R$ {total.toFixed(2)}
+                      </Typography>
+                    </Box>
+                  </Box>
+
+                  {/* Botões de ação */}
+                  <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                    <Button
+                      variant="contained"
+                      size="large"
+                      startIcon={<Payment />}
+                      onClick={handleFinalizarCompra}
+                      disabled={carrinho.length === 0 || loading}
+                      sx={{ py: 1.5 }}
+                    >
+                      {loading ? (
+                        <CircularProgress size={24} color="inherit" />
+                      ) : (
+                        "Finalizar Compra"
+                      )}
+                    </Button>
+
+                    <Button
+                      variant="outlined"
+                      size="large"
+                      startIcon={<ArrowBack />}
+                      onClick={handleContinuarComprando}
+                      disabled={loading}
+                      sx={{ py: 1.5 }}
+                    >
+                      Continuar Comprando
+                    </Button>
+                  </Box>
+
+                  {/* Segurança */}
                   <Box
                     sx={{
+                      mt: 3,
+                      p: 2,
+                      bgcolor: "grey.50",
+                      borderRadius: 1,
                       display: "flex",
-                      justifyContent: "space-between",
-                      mb: 1,
+                      alignItems: "center",
+                      gap: 2,
                     }}
                   >
-                    <Typography variant="body2" color="text.secondary">
-                      Desconto cupom
-                    </Typography>
-                    <Typography variant="body1" color="success.main">
-                      - R$ {descontoCupom.toFixed(2)}
+                    <Security color="success" />
+                    <Typography variant="caption" color="text.secondary">
+                      Compra 100% segura. Dados protegidos.
                     </Typography>
                   </Box>
-                )}
+                </>
+              )}
 
-                <Divider sx={{ my: 2 }} />
+              {activeStep === 1 && (
+                <Box>
+                  <Typography variant="body1" gutterBottom>
+                    <strong>Método selecionado:</strong> {
+                      paymentMethods.find(m => m.id === selectedPaymentMethod)?.name || "Nenhum"
+                    }
+                  </Typography>
+                  <Typography variant="h6" color="primary" gutterBottom>
+                    Total: R$ {total.toFixed(2)}
+                  </Typography>
+                  
+                  <Button
+                    variant="contained"
+                    fullWidth
+                    size="large"
+                    onClick={handlePayment}
+                    disabled={!selectedPaymentMethod || loading}
+                    sx={{ mt: 2, py: 1.5 }}
+                  >
+                    {loading ? (
+                      <>
+                        <CircularProgress size={24} color="inherit" sx={{ mr: 1 }} />
+                        Processando...
+                      </>
+                    ) : (
+                      "Pagar com Mercado Pago"
+                    )}
+                  </Button>
+                  
+                  <Button
+                    variant="outlined"
+                    fullWidth
+                    sx={{ mt: 2 }}
+                    onClick={handleVoltarParaCarrinho}
+                  >
+                    Alterar método de pagamento
+                  </Button>
+                </Box>
+              )}
+            </Paper>
 
-                {/* Total */}
+            {/* Métodos de pagamento - só mostra no passo 0 */}
+            {activeStep === 0 && (
+              <Paper sx={{ p: 3, mt: 3 }}>
+                <Typography variant="h6" fontWeight="bold" gutterBottom>
+                  Aceitamos
+                </Typography>
                 <Box
                   sx={{
                     display: "flex",
-                    justifyContent: "space-between",
-                    mb: 3,
+                    justifyContent: "space-around",
+                    alignItems: "center",
+                    flexWrap: "wrap",
+                    gap: 2,
                   }}
                 >
-                  <Typography variant="h6" fontWeight="bold">
-                    Total
-                  </Typography>
-                  <Typography variant="h5" fontWeight="bold" color="primary">
-                    R$ {total.toFixed(2)}
-                  </Typography>
+                  {paymentMethods.map((method) => (
+                    <Box key={method.id} sx={{ textAlign: "center" }}>
+                      {method.icon}
+                      <Typography variant="caption">{method.name}</Typography>
+                    </Box>
+                  ))}
                 </Box>
-              </Box>
-
-              {/* Botões de ação */}
-              <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                <Button
-                  variant="contained"
-                  size="large"
-                  startIcon={<Payment />}
-                  onClick={handleFinalizarCompra}
-                  disabled={carrinho.length === 0 || loading}
-                  sx={{ py: 1.5 }}
-                >
-                  {loading ? (
-                    <CircularProgress size={24} color="inherit" />
-                  ) : activeStep === 0 ? (
-                    "Finalizar Compra"
-                  ) : (
-                    "Ir para Pagamento"
-                  )}
-                </Button>
-
-                <Button
-                  variant="outlined"
-                  size="large"
-                  startIcon={<ArrowBack />}
-                  onClick={handleContinuarComprando}
-                  disabled={loading}
-                  sx={{ py: 1.5 }}
-                >
-                  Continuar Comprando
-                </Button>
-              </Box>
-
-              {/* Segurança */}
-              <Box
-                sx={{
-                  mt: 3,
-                  p: 2,
-                  bgcolor: "grey.50",
-                  borderRadius: 1,
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 2,
-                }}
-              >
-                <Security color="success" />
-                <Typography variant="caption" color="text.secondary">
-                  Compra 100% segura. Dados protegidos.
-                </Typography>
-              </Box>
-            </Paper>
-
-            {/* Métodos de pagamento */}
-            <Paper sx={{ p: 3, mt: 3 }}>
-              <Typography variant="h6" fontWeight="bold" gutterBottom>
-                Aceitamos
-              </Typography>
-              <Box
-                sx={{
-                  display: "flex",
-                  justifyContent: "space-around",
-                  alignItems: "center",
-                  flexWrap: "wrap",
-                  gap: 2,
-                }}
-              >
-                {paymentMethods.map((method) => (
-                  <Box key={method.id} sx={{ textAlign: "center" }}>
-                    {method.icon}
-                    <Typography variant="caption">{method.name}</Typography>
-                  </Box>
-                ))}
-              </Box>
-            </Paper>
+              </Paper>
+            )}
 
             {/* Benefícios */}
-            <Paper sx={{ p: 3, mt: 3 }}>
-              <Typography variant="h6" fontWeight="bold" gutterBottom>
-                Benefícios incluídos
-              </Typography>
-              <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-                  <CheckCircle color="success" fontSize="small" />
-                  <Typography variant="body2">Acesso vitalício</Typography>
+            {activeStep === 0 && (
+              <Paper sx={{ p: 3, mt: 3 }}>
+                <Typography variant="h6" fontWeight="bold" gutterBottom>
+                  Benefícios incluídos
+                </Typography>
+                <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                    <CheckCircle color="success" fontSize="small" />
+                    <Typography variant="body2">Acesso vitalício</Typography>
+                  </Box>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                    <CheckCircle color="success" fontSize="small" />
+                    <Typography variant="body2">Certificado digital</Typography>
+                  </Box>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                    <CheckCircle color="success" fontSize="small" />
+                    <Typography variant="body2">Suporte por 1 ano</Typography>
+                  </Box>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                    <CheckCircle color="success" fontSize="small" />
+                    <Typography variant="body2">30 dias de garantia</Typography>
+                  </Box>
                 </Box>
-                <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-                  <CheckCircle color="success" fontSize="small" />
-                  <Typography variant="body2">Certificado digital</Typography>
-                </Box>
-                <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-                  <CheckCircle color="success" fontSize="small" />
-                  <Typography variant="body2">Suporte por 1 ano</Typography>
-                </Box>
-                <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-                  <CheckCircle color="success" fontSize="small" />
-                  <Typography variant="body2">30 dias de garantia</Typography>
-                </Box>
-              </Box>
-            </Paper>
+              </Paper>
+            )}
           </Box>
         </Box>
       </Container>
@@ -772,14 +916,14 @@ const CarrinhoPage: React.FC = () => {
             disabled={!selectedPaymentMethod || loading}
             startIcon={loading ? <CircularProgress size={20} /> : <Payment />}
           >
-            {loading ? "Processando..." : "Pagar com Mercado Pago"}
+            {loading ? "Processando..." : "Continuar"}
           </Button>
         </DialogActions>
       </Dialog>
 
       <Snackbar
         open={snackbarOpen}
-        autoHideDuration={3000}
+        autoHideDuration={6000}
         onClose={() => setSnackbarOpen(false)}
         message={snackbarMessage}
       />

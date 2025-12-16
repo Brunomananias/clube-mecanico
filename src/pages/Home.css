@@ -69,7 +69,7 @@ html {
 
 /* Hero Section */
 .hero-section {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #4e4e77 0%, #252425 100%);
   color: white;
   padding: 80px 0;
   position: relative;
@@ -315,7 +315,7 @@ html {
 .cta-paper {
   padding: 64px !important;
   border-radius: 16px !important;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+  background: linear-gradient(135deg, #828385 0%, #1e1d1f 100%) !important;
   color: white !important;
   text-align: center !important;
 }
@@ -356,7 +356,7 @@ html {
 
 /* Footer */
 .footer {
-  background-color: #1a237e;
+  background-color: #757677;
   color: white;
   padding: 64px 0;
 }
@@ -524,7 +524,7 @@ html {
 
 /* Gradientes personalizados */
 .gradient-text {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #667eea 0%, #0d0d0e 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;

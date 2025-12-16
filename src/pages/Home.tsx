@@ -21,11 +21,11 @@ import {
 } from "@mui/material";
 import { motion } from "framer-motion";
 import MenuIcon from "@mui/icons-material/Menu";
-import DirectionsCarIcon from "@mui/icons-material/DirectionsCar";
+import DirectionsBikeIcon from "@mui/icons-material/DirectionsBike";
 import BuildIcon from "@mui/icons-material/Build";
-import ElectricalServicesIcon from "@mui/icons-material/ElectricalServices";
+import EngineeringIcon from "@mui/icons-material/Engineering";
 import TwoWheelerIcon from "@mui/icons-material/TwoWheeler";
-import LocalShippingIcon from "@mui/icons-material/LocalShipping";
+import PedalBikeIcon from "@mui/icons-material/PedalBike";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import PeopleIcon from "@mui/icons-material/People";
 import SchoolIcon from "@mui/icons-material/School";
@@ -39,6 +39,11 @@ import PersonIcon from "@mui/icons-material/Person";
 import ExitToAppIcon from "@mui/icons-material/ExitToApp";
 import DashboardIcon from "@mui/icons-material/Dashboard";
 import ShoppingCartIcon from "@mui/icons-material/ShoppingCart";
+import SpeedIcon from "@mui/icons-material/Speed";
+import SettingsIcon from "@mui/icons-material/Settings";
+import ElectricBikeIcon from "@mui/icons-material/ElectricBike";
+import PsychologyIcon from "@mui/icons-material/Psychology";
+import VerifiedIcon from "@mui/icons-material/Verified";
 import "./Home.css";
 import logo from "../assets/logo.png";
 import { useNavigate } from "react-router-dom";
@@ -48,12 +53,10 @@ const Home: React.FC = () => {
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
   const navigate = useNavigate();
   
-  // Verificar se o usuário está logado
   const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
   const userType = localStorage.getItem('userType') || '';
   const userEmail = localStorage.getItem('userEmail') || '';
   
-  // Estado para o menu do usuário
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
 
@@ -70,69 +73,70 @@ const Home: React.FC = () => {
     localStorage.removeItem('userType');
     localStorage.removeItem('userEmail');
     handleMenuClose();
-    window.location.reload(); // Recarregar para atualizar o estado
+    window.location.reload();
   };
 
+  // Cursos especializados em bicicletas
   const cursos = [
     {
       id: 1,
-      titulo: "Mecânica Automotiva Básica",
-      descricao:
-        "Aprenda os fundamentos da mecânica de automóveis, desde manutenção preventiva até correções simples.",
-      icone: <DirectionsCarIcon fontSize="large" />,
+      titulo: "Mecânica de Bicicletas Básica",
+      descricao: "Aprenda os fundamentos da manutenção de bicicletas, ajustes essenciais e reparos comuns.",
+      icone: <DirectionsBikeIcon fontSize="large" />,
       duracao: "40 horas",
       nivel: "Iniciante",
       cor: "#1976d2",
+      destaque: "Essencial para ciclistas"
     },
     {
       id: 2,
-      titulo: "Mecânica de Motos",
-      descricao:
-        "Especialização em manutenção e reparo de motocicletas, scooters e similares.",
-      icone: <TwoWheelerIcon fontSize="large" />,
+      titulo: "Sistemas de Suspensão",
+      descricao: "Especialização em manutenção e regulagem de amortecedores e garfos de mountain bike.",
+      icone: <SettingsIcon fontSize="large" />,
       duracao: "60 horas",
-      nivel: "Intermediário",
+      nivel: "Avançado",
       cor: "#2e7d32",
+      destaque: "Para mecânicos profissionais"
     },
     {
       id: 3,
-      titulo: "Eletrônica Automotiva",
-      descricao:
-        "Diagnóstico e reparo de sistemas eletrônicos, injeção eletrônica e centralinas.",
-      icone: <ElectricalServicesIcon fontSize="large" />,
-      duracao: "80 horas",
-      nivel: "Avançado",
-      cor: "#ed6c02",
+      titulo: "Freios Hidráulicos",
+      descricao: "Diagnóstico e reparo completo de sistemas de freio hidráulico, sangria e manutenção.",
+      icone: <EngineeringIcon fontSize="large" />,
+      duracao: "35 horas",
+      nivel: "Intermediário",
+      cor: "#d32f2f",
+      destaque: "Segurança em primeiro lugar"
     },
     {
       id: 4,
-      titulo: "Mecânica Pesada",
-      descricao:
-        "Manutenção de veículos pesados, caminhões, ônibus e máquinas agrícolas.",
-      icone: <LocalShippingIcon fontSize="large" />,
-      duracao: "120 horas",
-      nivel: "Avançado",
+      titulo: "Transmissão e Câmbios",
+      descricao: "Ajuste fino e manutenção de câmbios, cassetes, correntes e sistemas de transmissão.",
+      icone: <SpeedIcon fontSize="large" />,
+      duracao: "45 horas",
+      nivel: "Intermediário",
       cor: "#9c27b0",
+      destaque: "Performance garantida"
     },
     {
       id: 5,
-      titulo: "Injeção Eletrônica",
-      descricao:
-        "Curso especializado em diagnóstico e programação de sistemas de injeção eletrônica.",
-      icone: <BuildIcon fontSize="large" />,
+      titulo: "Bicicletas Elétricas",
+      descricao: "Curso especializado em sistemas elétricos, motores, baterias e controladores de e-bikes.",
+      icone: <ElectricBikeIcon fontSize="large" />,
       duracao: "50 horas",
-      nivel: "Intermediário",
-      cor: "#d32f2f",
+      nivel: "Avançado",
+      cor: "#ed6c02",
+      destaque: "Mercado em expansão"
     },
     {
       id: 6,
-      titulo: "Gestão de Oficina",
-      descricao:
-        "Aprenda a administrar uma oficina mecânica com técnicas modernas de gestão.",
-      icone: <PeopleIcon fontSize="large" />,
+      titulo: "Gestão de Oficina de Bikes",
+      descricao: "Aprenda a administrar uma oficina especializada com técnicas modernas de gestão.",
+      icone: <PsychologyIcon fontSize="large" />,
       duracao: "30 horas",
       nivel: "Todos os níveis",
       cor: "#0288d1",
+      destaque: "Empreendedorismo"
     },
   ];
 
@@ -153,7 +157,7 @@ const Home: React.FC = () => {
       <Container maxWidth="xl">
         <Toolbar disableGutters>
           <div className="nav-logo">
-            <BuildIcon sx={{ mr: 2, fontSize: 32 }} />
+            <DirectionsBikeIcon sx={{ mr: 2, fontSize: 32 }} />
             <Typography
               variant="h6"
               noWrap
@@ -232,7 +236,6 @@ const Home: React.FC = () => {
                 Meu Dashboard
               </Button>
 
-              {/* Menu do usuário */}
               <IconButton
                 onClick={handleMenuClick}
                 size="small"
@@ -258,12 +261,6 @@ const Home: React.FC = () => {
                     overflow: 'visible',
                     filter: 'drop-shadow(0px 2px 8px rgba(0,0,0,0.32))',
                     mt: 1.5,
-                    '& .MuiAvatar-root': {
-                      width: 32,
-                      height: 32,
-                      ml: -0.5,
-                      mr: 1,
-                    },
                   },
                 }}
                 transformOrigin={{ horizontal: 'right', vertical: 'top' }}
@@ -310,7 +307,7 @@ const Home: React.FC = () => {
       <Container maxWidth="xl">
         <Toolbar disableGutters>
           <div className="nav-logo">
-            <BuildIcon sx={{ mr: 2, fontSize: 32 }} />
+            <DirectionsBikeIcon sx={{ mr: 2, fontSize: 32 }} />
             <Typography
               variant="h6"
               noWrap
@@ -399,13 +396,10 @@ const Home: React.FC = () => {
 
   return (
     <>
-      {/* Navbar condicional */}
       {isLoggedIn ? renderLoggedInNavbar() : renderVisitorNavbar()}
-
-      {/* Espaço para a navbar fixa */}
       <Toolbar />
 
-      {/* Seção Hero/Logo da Empresa */}
+      {/* Seção Hero */}
       <section id="inicio" className="hero-section">
         <Container maxWidth="lg">
           <div className="hero-container">
@@ -416,27 +410,30 @@ const Home: React.FC = () => {
                 transition={{ duration: 0.8 }}
               >
                 <Typography
-                  variant="h2"
+                  variant="h1"
                   fontWeight="bold"
                   gutterBottom
                   className="hero-title"
+                  sx={{ fontSize: { xs: '2.5rem', md: '3.5rem' } }}
                 >
-                  Clube do Mecânico
+                  O Seu Próximo Nível Começa Aqui
                 </Typography>
                 <Typography
                   variant="h5"
                   sx={{ mb: 3, opacity: 0.9 }}
                   className="hero-subtitle"
                 >
-                  Transformando paixão por automóveis em carreira de sucesso
+                  Mais do que uma escola, somos um centro de excelência em mecânica de bicicletas
                 </Typography>
                 <Typography
                   variant="body1"
-                  sx={{ mb: 4, fontSize: "1.1rem" }}
+                  sx={{ mb: 4, fontSize: "1.1rem", maxWidth: "800px" }}
                   className="hero-description"
                 >
-                  Há mais de 15 anos formando os melhores profissionais da
-                  mecânica automotiva. Excelência técnica e práticas modernas.
+                  Seja bem-vindo ao Clube do Mecânico, a única referência em cursos de mecânica 
+                  de bicicletas na nossa região. Nascemos da paixão por duas rodas e da crença 
+                  de que o conhecimento técnico é o elo que transforma ciclistas e mecânicos 
+                  em verdadeiros mestres do equipamento.
                 </Typography>
                 <div className="hero-buttons">
                   <Button
@@ -445,6 +442,7 @@ const Home: React.FC = () => {
                     size="large"
                     className="hero-button"
                     onClick={() => navigate("/cursos")}
+                    startIcon={<DirectionsBikeIcon />}
                   >
                     Ver Cursos
                   </Button>
@@ -455,6 +453,7 @@ const Home: React.FC = () => {
                       size="large"
                       className="hero-button-outline"
                       onClick={() => navigate(userType === 'admin' ? '/admin/dashboard' : '/aluno/dashboard')}
+                      startIcon={<DashboardIcon />}
                     >
                       Acessar Dashboard
                     </Button>
@@ -465,6 +464,7 @@ const Home: React.FC = () => {
                       size="large"
                       className="hero-button-outline"
                       onClick={() => navigate("/cadastrar")}
+                      startIcon={<SchoolIcon />}
                     >
                       Começar Agora
                     </Button>
@@ -483,14 +483,14 @@ const Home: React.FC = () => {
                   <Box
                     component="img"
                     src={logo}
-                    alt="Logo Clube Mecânico"
+                    alt="Logo Clube do Mecânico"
+                    sx={{ maxWidth: "100%", height: "auto" }}
                   />
                 </div>
               </motion.div>
             </div>
           </div>
           
-          {/* Mensagem de boas-vindas para usuário logado */}
           {isLoggedIn && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -508,13 +508,13 @@ const Home: React.FC = () => {
                   gap: 2
                 }}
               >
-                <CheckCircleIcon color="success" />
+                <VerifiedIcon color="success" sx={{ fontSize: 32 }} />
                 <Box>
                   <Typography variant="h6" fontWeight="bold">
                     Bem-vindo de volta, {userEmail}!
                   </Typography>
                   <Typography variant="body2">
-                    Continue sua jornada de aprendizado. Acesse seus cursos ou explore novas oportunidades.
+                    Continue sua jornada de aprendizado em mecânica de bicicletas.
                   </Typography>
                 </Box>
                 <Box sx={{ flexGrow: 1 }} />
@@ -522,6 +522,7 @@ const Home: React.FC = () => {
                   variant="contained"
                   size="small"
                   onClick={() => navigate(userType === 'admin' ? '/admin/dashboard' : '/aluno/dashboard')}
+                  startIcon={<DashboardIcon />}
                 >
                   Ir para Dashboard
                 </Button>
@@ -531,7 +532,90 @@ const Home: React.FC = () => {
         </Container>
       </section>
 
-      {/* Seção Sobre a Empresa */}
+      {/* Seção: Para Quem é o Clube? */}
+      <section className="para-quem-section" style={{ backgroundColor: '#ffffffff', padding: '80px 0' }}>
+        <Container maxWidth="lg">
+          <motion.div
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true }}
+          >
+            <Typography
+              variant="h3"
+              align="center"
+              fontWeight="bold"
+              gutterBottom
+              color="primary"
+              className="section-title"
+            >
+              Para Quem é o Clube?
+            </Typography>
+
+            <div className="publico-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '30px', marginTop: '40px' }}>
+              {/* Card Mecânicos Profissionais */}
+              <motion.div
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6 }}
+                viewport={{ once: true }}
+              >
+                <Card sx={{ height: '100%', borderRadius: 2, overflow: 'hidden', border: '2px solid', borderColor: 'primary.main' }}>
+                  <div style={{ backgroundColor: 'primary.main', padding: '20px', textAlign: 'center' }}>
+                    <EngineeringIcon sx={{ fontSize: 48, color: 'white' }} />
+                  </div>
+                  <CardContent sx={{ p: 3 }}>
+                    <Typography variant="h5" fontWeight="bold" gutterBottom color="primary">
+                      Mecânicos Profissionais
+                    </Typography>
+                    <Typography variant="body1" paragraph color="text.secondary">
+                      Oferecemos o caminho para a sua especialização. Se você busca aprofundar seu 
+                      conhecimento em sistemas específicos (suspensão, hidráulica, eletrônicos) e se 
+                      destacar no mercado, nossos cursos são a chave para elevar sua carreira.
+                    </Typography>
+                    <Stack direction="row" spacing={1} sx={{ mb: 2 }}>
+                      <Chip label="Especialização" size="small" color="primary" />
+                      <Chip label="Carreira" size="small" color="secondary" />
+                      <Chip label="Mercado" size="small" />
+                    </Stack>
+                  </CardContent>
+                </Card>
+              </motion.div>
+
+              {/* Card Ciclistas e Entusiastas */}
+              <motion.div
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.2 }}
+                viewport={{ once: true }}
+              >
+                <Card sx={{ height: '100%', borderRadius: 2, overflow: 'hidden', border: '2px solid', borderColor: 'secondary.main' }}>
+                  <div style={{ backgroundColor: 'secondary.main', padding: '20px', textAlign: 'center' }}>
+                    <PedalBikeIcon sx={{ fontSize: 48, color: 'white' }} />
+                  </div>
+                  <CardContent sx={{ p: 3 }}>
+                    <Typography variant="h5" fontWeight="bold" gutterBottom color="secondary">
+                      Ciclistas e Entusiastas
+                    </Typography>
+                    <Typography variant="body1" paragraph color="text.secondary">
+                      Sua bicicleta é uma máquina complexa. Aprender a sua mecânica não é um luxo, 
+                      é uma necessidade. Nossos cursos dão a autonomia necessária para que você 
+                      identifique e solucione pequenos reparos, garantindo que um pneu furado ou 
+                      um ajuste de câmbio não interrompam seu treino ou comprometam sua performance.
+                    </Typography>
+                    <Stack direction="row" spacing={1}>
+                      <Chip label="Autonomia" size="small" color="primary" />
+                      <Chip label="Segurança" size="small" color="success" />
+                      <Chip label="Performance" size="small" />
+                    </Stack>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            </div>
+          </motion.div>
+        </Container>
+      </section>
+
+      {/* Seção Sobre */}
       <Container maxWidth="lg" sx={{ py: 8 }} id="sobre">
         <motion.div
           initial={{ opacity: 0 }}
@@ -539,124 +623,31 @@ const Home: React.FC = () => {
           viewport={{ once: true }}
         >
           <Typography
-            variant="h3"
+            variant="h4"
             align="center"
             fontWeight="bold"
             gutterBottom
             color="primary"
             className="section-title"
           >
-            Do Pedal ao Profissional
+            Onde a Técnica Encontra a Paixão
           </Typography>
-          <Typography
-            variant="h6"
-            align="center"
-            color="text.secondary"
-            className="section-subtitle"
-          >
-            Especialistas em formar mecânicos de bicicletas
-          </Typography>
+          
+          {/* Texto introdutório */}
+          <Paper sx={{ p: 4, mb: 6, borderRadius: 2, bgcolor: 'primary.light' }}>
+            <Typography variant="body1" paragraph align="center" sx={{ fontSize: '1.1rem' }}>
+              Em um mercado que muitas vezes segue o mesmo caminho, o Clube do Mecânico tem uma missão: 
+              ser autêntico e único. O que você encontra aqui é uma metodologia voltada para a prática 
+              real, cobrindo desde o básico essencial até as mais avançadas especializações.
+            </Typography>
+            <Typography variant="h6" align="center" fontWeight="bold" color="black">
+              Junte-se a nós. Seja para buscar a maestria na sua profissão ou a confiança para cuidar 
+              do seu equipamento, o Clube do Mecânico é o lugar onde a técnica encontra a paixão.
+            </Typography>
+          </Paper>
 
-          {/* PRIMEIRA SEÇÃO - Foto ESQUERDA, Texto DIREITA */}
-          <div className="sobre-container sobre-container-reverse">
-            <div className="sobre-imagem">
-              <motion.div
-                initial={{ opacity: 0, x: -50 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.7 }}
-                viewport={{ once: true }}
-              >
-                <Box
-                  component="img"
-                  src="https://images.unsplash.com/photo-1532298229144-0ec0c57515c7?auto=format&fit=crop&w=600&h=400&q=80"
-                  alt="Oficina de bicicletas"
-                  className="sobre-img"
-                />
-              </motion.div>
-            </div>
-            <div className="sobre-conteudo">
-              <motion.div
-                initial={{ opacity: 0, x: 50 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.7, delay: 0.2 }}
-                viewport={{ once: true }}
-              >
-                <Typography variant="h5" fontWeight="bold" color="primary" gutterBottom>
-                  Nossa História
-                </Typography>
-                <Typography variant="body1" paragraph>
-                  Em 2015, transformamos paixão por bicicletas em uma escola de referência. 
-                  Começamos em uma pequena garagem e hoje formamos mais de <strong>3.200 mecânicos</strong> 
-                  especializados em todo o Brasil.
-                </Typography>
-                <Typography variant="body1" paragraph>
-                  Somos a <strong>primeira escola brasileira</strong> focada exclusivamente em 
-                  mecânica de bicicletas, com metodologia prática e reconhecimento nacional.
-                </Typography>
-              </motion.div>
-            </div>
-          </div>
-
-          {/* SEGUNDA SEÇÃO - Foto DIREITA, Texto ESQUERDA */}
+          {/* Diferenciais */}
           <div className="sobre-container">
-            <div className="sobre-conteudo">
-              <motion.div
-                initial={{ opacity: 0, x: -50 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.7 }}
-                viewport={{ once: true }}
-              >
-                <Typography variant="h5" fontWeight="bold" color="primary" gutterBottom>
-                  Por que Escolher Bicicletas?
-                </Typography>
-                <Typography variant="body1" paragraph>
-                  • <strong>Mercado em crescimento</strong> de 25% ao ano<br/>
-                  • <strong>Baixo investimento</strong> para começar<br/>
-                  • <strong>Alta demanda</strong> por especialistas<br/>
-                  • <strong>Trabalho com propósito</strong> e sustentabilidade<br/>
-                </Typography>
-                
-                <div className="estatisticas">
-                  <div className="estatistica">
-                    <Typography variant="h4" color="primary" fontWeight="bold">
-                      3.2K+
-                    </Typography>
-                    <Typography variant="body2">Mecânicos</Typography>
-                  </div>
-                  <div className="estatistica">
-                    <Typography variant="h4" color="primary" fontWeight="bold">
-                      94%
-                    </Typography>
-                    <Typography variant="body2">Empregados</Typography>
-                  </div>
-                  <div className="estatistica">
-                    <Typography variant="h4" color="primary" fontWeight="bold">
-                      15+
-                    </Typography>
-                    <Typography variant="body2">Cursos</Typography>
-                  </div>
-                </div>
-              </motion.div>
-            </div>
-            <div className="sobre-imagem">
-              <motion.div
-                initial={{ opacity: 0, x: 50 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.7, delay: 0.2 }}
-                viewport={{ once: true }}
-              >
-                <Box
-                  component="img"
-                  src="https://images.unsplash.com/photo-1571068316344-75bc76f77890?auto=format&fit=crop&w=600&h=400&q=80"
-                  alt="Mecânico trabalhando em bicicleta"
-                  className="sobre-img"
-                />
-              </motion.div>
-            </div>
-          </div>
-
-          {/* TERCEIRA SEÇÃO - Foto ESQUERDA, Texto DIREITA */}
-          <div className="sobre-container sobre-container-reverse">
             <div className="sobre-imagem">
               <motion.div
                 initial={{ opacity: 0, x: -50 }}
@@ -680,7 +671,7 @@ const Home: React.FC = () => {
                 viewport={{ once: true }}
               >
                 <Typography variant="h5" fontWeight="bold" color="primary" gutterBottom>
-                  Nossa Metodologia
+                  Por que Somos Diferentes?
                 </Typography>
                 
                 <div className="diferenciais">
@@ -715,7 +706,7 @@ const Home: React.FC = () => {
       </Container>
 
       {/* Seção de Cursos */}
-      <section id="cursos" className="cursos-section">
+      <section id="cursos" className="cursos-section" style={{ backgroundColor: '#f5f5f5' }}>
         <Container maxWidth="lg">
           <motion.div
             initial={{ opacity: 0 }}
@@ -730,15 +721,16 @@ const Home: React.FC = () => {
               color="primary"
               className="section-title"
             >
-              Nossos Cursos
+              Nossos Cursos Especializados
             </Typography>
             <Typography
               variant="h6"
               align="center"
               color="text.secondary"
               className="section-subtitle"
+              sx={{ mb: 4 }}
             >
-              Formação completa para todas as áreas da mecânica automotiva
+              Formação completa em mecânica de bicicletas
             </Typography>
 
             <div className="cursos-grid">
@@ -751,7 +743,7 @@ const Home: React.FC = () => {
                   viewport={{ once: true }}
                   className="curso-card-wrapper"
                 >
-                  <Card className="curso-card">
+                  <Card className="curso-card" sx={{ height: '100%' }}>
                     <div
                       className="curso-header"
                       style={{ backgroundColor: curso.cor }}
@@ -766,7 +758,7 @@ const Home: React.FC = () => {
                       </Typography>
                     </div>
 
-                    <CardContent className="curso-conteudo">
+                    <CardContent className="curso-conteudo" sx={{ flexGrow: 1 }}>
                       <Typography
                         variant="body2"
                         color="text.secondary"
@@ -775,6 +767,16 @@ const Home: React.FC = () => {
                       >
                         {curso.descricao}
                       </Typography>
+
+                      <Box sx={{ mb: 2 }}>
+                        <Chip
+                          label={curso.destaque}
+                          size="small"
+                          color="info"
+                          variant="filled"
+                          sx={{ mb: 1 }}
+                        />
+                      </Box>
 
                       <div className="curso-tags">
                         <Chip
@@ -802,6 +804,7 @@ const Home: React.FC = () => {
                           backgroundColor: curso.cor,
                         }}
                         onClick={() => navigate(`/curso/${curso.id}`)}
+                        startIcon={<DirectionsBikeIcon />}
                       >
                         {isLoggedIn ? 'Ver Detalhes' : 'Saiba Mais'}
                       </Button>
@@ -811,13 +814,14 @@ const Home: React.FC = () => {
               ))}
             </div>
 
-            <div className="cursos-rodape">
+            <div className="cursos-rodape" style={{ textAlign: 'center', marginTop: '40px' }}>
               <Button
                 variant="outlined"
                 color="primary"
                 size="large"
                 className="botao-todos-cursos"
                 onClick={() => navigate("/cursos")}
+                startIcon={<SchoolIcon />}
               >
                 Ver Todos os Cursos
               </Button>
@@ -828,18 +832,19 @@ const Home: React.FC = () => {
 
       {/* Seção Call to Action */}
       <Container maxWidth="lg" sx={{ py: 8 }} id="inscricao">
-        <Paper className="cta-paper">
-          <SchoolIcon className="cta-icone" />
+        <Paper className="cta-paper" sx={{ background: 'linear-gradient(135deg, #1976d2 0%, #2196f3 100%)' }}>
+          <DirectionsBikeIcon className="cta-icone" sx={{ fontSize: 64, color: 'white' }} />
           <Typography
             variant="h3"
             fontWeight="bold"
             gutterBottom
             className="cta-titulo"
+            sx={{ color: 'white' }}
           >
-            Pronto para Transformar sua Carreira?
+            Pronto para Transformar sua Relação com as Bicicletas?
           </Typography>
-          <Typography variant="h6" className="cta-subtitulo">
-            Invista no seu futuro com os melhores cursos de mecânica do mercado
+          <Typography variant="h6" className="cta-subtitulo" sx={{ color: 'white', opacity: 0.9, mb: 4 }}>
+            Seja para profissionalizar sua carreira ou para ganhar autonomia no pedal
           </Typography>
           {isLoggedIn ? (
             <Button
@@ -848,6 +853,8 @@ const Home: React.FC = () => {
               size="large"
               className="cta-botao"
               onClick={() => navigate("/cursos")}
+              sx={{ bgcolor: 'white', color: 'primary.main', '&:hover': { bgcolor: '#f5f5f5' } }}
+              startIcon={<DirectionsBikeIcon />}
             >
               Explorar Cursos
             </Button>
@@ -858,6 +865,8 @@ const Home: React.FC = () => {
               size="large"
               className="cta-botao"
               onClick={() => navigate("/cadastrar")}
+              sx={{ bgcolor: 'white', color: 'primary.main', '&:hover': { bgcolor: '#f5f5f5' } }}
+              startIcon={<SchoolIcon />}
             >
               Matricule-se Agora
             </Button>
@@ -866,29 +875,31 @@ const Home: React.FC = () => {
       </Container>
 
       {/* Footer/Contato */}
-      <footer id="contato" className="footer">
+      <footer id="contato" className="footer" style={{ backgroundColor: '#2c3e50' }}>
         <Container maxWidth="lg">
           <div className="footer-conteudo">
             <div className="footer-coluna">
               <div className="footer-logo">
-                <BuildIcon className="footer-icone-logo" />
+                <DirectionsBikeIcon className="footer-icone-logo" sx={{ fontSize: 32, color: 'white' }} />
                 <Typography
                   variant="h5"
                   fontWeight="bold"
                   className="footer-titulo"
+                  sx={{ color: 'white' }}
                 >
-                  CLUBE MECÂNICO
+                  CLUBE DO MECÂNICO
                 </Typography>
               </div>
-              <Typography variant="body2" className="footer-descricao">
-                Formando os melhores profissionais da mecânica automotiva há
-                mais de 15 anos. Excelência, tradição e inovação.
+              <Typography variant="body2" className="footer-descricao" sx={{ color: '#b0bec5', mt: 2 }}>
+                A única referência em cursos de mecânica de bicicletas na região. 
+                Centro de excelência onde a técnica encontra a paixão.
               </Typography>
-              <div className="footer-redes-sociais">
+              <div className="footer-redes-sociais" style={{ marginTop: '20px' }}>
                 <IconButton
                   color="inherit"
                   size="small"
                   className="rede-social"
+                  sx={{ color: 'white' }}
                 >
                   <FacebookIcon />
                 </IconButton>
@@ -896,6 +907,7 @@ const Home: React.FC = () => {
                   color="inherit"
                   size="small"
                   className="rede-social"
+                  sx={{ color: 'white' }}
                 >
                   <InstagramIcon />
                 </IconButton>
@@ -903,6 +915,7 @@ const Home: React.FC = () => {
                   color="inherit"
                   size="small"
                   className="rede-social"
+                  sx={{ color: 'white' }}
                 >
                   <YouTubeIcon />
                 </IconButton>
@@ -915,24 +928,25 @@ const Home: React.FC = () => {
                 fontWeight="bold"
                 gutterBottom
                 className="footer-coluna-titulo"
+                sx={{ color: 'white' }}
               >
                 Contato
               </Typography>
               <div className="footer-contatos">
                 <div className="footer-contato">
-                  <PhoneIcon className="contato-icone" />
-                  <Typography variant="body2">(11) 99999-9999</Typography>
+                  <PhoneIcon className="contato-icone" sx={{ color: '#90caf9' }} />
+                  <Typography variant="body2" sx={{ color: '#b0bec5' }}>(11) 99999-9999</Typography>
                 </div>
                 <div className="footer-contato">
-                  <EmailIcon className="contato-icone" />
-                  <Typography variant="body2">
-                    contato@clubemecanico.com
+                  <EmailIcon className="contato-icone" sx={{ color: '#90caf9' }} />
+                  <Typography variant="body2" sx={{ color: '#b0bec5' }}>
+                    contato@clubedomecanico.com
                   </Typography>
                 </div>
                 <div className="footer-contato">
-                  <LocationOnIcon className="contato-icone" />
-                  <Typography variant="body2" className="contato-endereco">
-                    Av. Automóvel, 1234 - Centro
+                  <LocationOnIcon className="contato-icone" sx={{ color: '#90caf9' }} />
+                  <Typography variant="body2" className="contato-endereco" sx={{ color: '#b0bec5' }}>
+                    Av. das Bicicletas, 1234 - Centro
                     <br />
                     São Paulo - SP
                   </Typography>
@@ -946,6 +960,7 @@ const Home: React.FC = () => {
                 fontWeight="bold"
                 gutterBottom
                 className="footer-coluna-titulo"
+                sx={{ color: 'white' }}
               >
                 {isLoggedIn ? 'Acesso Rápido' : 'Horários'}
               </Typography>
@@ -954,7 +969,7 @@ const Home: React.FC = () => {
                   <Button
                     variant="text"
                     fullWidth
-                    sx={{ justifyContent: 'flex-start', mb: 1 }}
+                    sx={{ justifyContent: 'flex-start', mb: 1, color: 'white' }}
                     onClick={() => navigate(userType === 'admin' ? '/admin/dashboard' : '/aluno/dashboard')}
                   >
                     Dashboard
@@ -962,7 +977,7 @@ const Home: React.FC = () => {
                   <Button
                     variant="text"
                     fullWidth
-                    sx={{ justifyContent: 'flex-start', mb: 1 }}
+                    sx={{ justifyContent: 'flex-start', mb: 1, color: 'white' }}
                     onClick={() => navigate('/cursos')}
                   >
                     Meus Cursos
@@ -970,7 +985,7 @@ const Home: React.FC = () => {
                   <Button
                     variant="text"
                     fullWidth
-                    sx={{ justifyContent: 'flex-start' }}
+                    sx={{ justifyContent: 'flex-start', color: 'white' }}
                     onClick={() => navigate('/carrinho')}
                   >
                     Meu Carrinho
@@ -978,15 +993,15 @@ const Home: React.FC = () => {
                 </>
               ) : (
                 <>
-                  <Typography variant="body2" className="footer-horarios">
-                    <strong>Secretaria:</strong>
+                  <Typography variant="body2" className="footer-horarios" sx={{ color: '#b0bec5' }}>
+                    <strong style={{ color: 'white' }}>Secretaria:</strong>
                     <br />
                     Segunda a Sexta: 8h às 18h
                     <br />
                     Sábado: 8h às 12h
                   </Typography>
-                  <Typography variant="body2" className="footer-aulas">
-                    <strong>Aulas:</strong>
+                  <Typography variant="body2" className="footer-aulas" sx={{ color: '#b0bec5', mt: 2 }}>
+                    <strong style={{ color: 'white' }}>Aulas:</strong>
                     <br />
                     Manhã, Tarde e Noite
                     <br />
@@ -997,15 +1012,17 @@ const Home: React.FC = () => {
             </div>
           </div>
 
-          <Divider className="footer-divisor" />
+          <Divider className="footer-divisor" sx={{ borderColor: '#455a64', my: 4 }} />
 
           <Typography
             variant="body2"
             align="center"
             className="footer-copyright"
+            sx={{ color: '#b0bec5' }}
           >
-            © {new Date().getFullYear()} Clube Mecânico. Todos os direitos
-            reservados.
+            © {new Date().getFullYear()} Clube do Mecânico. Todos os direitos reservados.
+            <br />
+            "Onde a técnica encontra a paixão"
           </Typography>
         </Container>
       </footer>
