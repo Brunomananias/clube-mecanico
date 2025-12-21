@@ -1,7 +1,7 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable react-hooks/set-state-in-effect */
 import React, { useEffect, useState } from 'react';
-import BuildIcon from "@mui/icons-material/Build";
 import {
   Typography,
   Button,
@@ -17,17 +17,11 @@ import {
   InputLabel,
   Paper,
   Box,
-  AppBar,
   Container,
   Toolbar,
-  IconButton,
   useMediaQuery,
   useTheme,
-  Avatar,
-  Menu,
-  Badge,
 } from '@mui/material';
-import MenuIcon from "@mui/icons-material/Menu";
 import { Snackbar, Alert } from '@mui/material';
 import {
   Search,
@@ -36,13 +30,10 @@ import {
   Group,
   Sort,
   KeyboardArrowRight,
-  Person,
-  ExitToApp,
-  Dashboard,
-  School,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import api from '../config/api';
+import Navbar from './components/Navbar';
 
 interface ICurso {
   id: number;
@@ -73,7 +64,7 @@ interface ITurma {
   status: string;
 }
 
-interface User {
+interface IUser {
   id: number;
   nome: string;
   email: string;
@@ -82,13 +73,9 @@ interface User {
 
 const CursosPage: React.FC = () => {
   const navigate = useNavigate();
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
-  
   // Estados do navbar
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [cartCount, setCartCount] = useState(0);
-  const open = Boolean(anchorEl);
   
   // Estados da página
   const [searchTerm, setSearchTerm] = useState('');
@@ -106,15 +93,10 @@ const CursosPage: React.FC = () => {
   });
 
   // Verificar se o usuário está logado
-  const isLoggedIn = !!localStorage.getItem('auth_token');
-  const userData = localStorage.getItem('user');
-  const user: User | null = userData ? JSON.parse(userData) : null;
-  const userEmail = user?.email || '';
-
-  // Menu do usuário
-  const handleMenuClick = (event: React.MouseEvent<HTMLElement>) => {
-    setAnchorEl(event.currentTarget);
-  };
+   const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
+  const userType = localStorage.getItem("userType") || "";
+  const userEmail = localStorage.getItem("userEmail") || "";
+  const userName = localStorage.getItem("userName") || "";
 
   const handleMenuClose = () => {
     setAnchorEl(null);
@@ -140,272 +122,6 @@ const CursosPage: React.FC = () => {
       }
     }
   };
-
-  // Navbar para usuário logado
-  const renderLoggedInNavbar = () => (
-    <AppBar position="fixed" color="primary" elevation={3}>
-      <Container maxWidth="xl">
-        <Toolbar disableGutters>
-          <div className="nav-logo">
-            <BuildIcon sx={{ mr: 2, fontSize: 32 }} />
-            <Typography
-              variant="h6"
-              noWrap
-              component="a"
-              href="/"
-              className="logo-text"
-              sx={{ cursor: 'pointer' }}
-              onClick={(e) => {
-                e.preventDefault();
-                navigate('/');
-              }}
-            >
-              CLUBE DO MECÂNICO
-            </Typography>
-          </div>
-
-          {!isMobile ? (
-            <div className="nav-links">
-              <Button 
-                color="inherit" 
-                className="nav-link"
-                onClick={() => navigate('/')}
-              >
-                Início
-              </Button>
-              <Button 
-                color="inherit" 
-                className="nav-link"
-                onClick={() => navigate('/#sobre')}
-              >
-                Sobre
-              </Button>
-              <Button 
-                color="inherit" 
-                className="nav-link"
-                onClick={() => navigate('/cursos')}
-                sx={{ fontWeight: 'bold' }}
-              >
-                Cursos
-              </Button>
-              <Button 
-                color="inherit" 
-                className="nav-link"
-                onClick={() => navigate('/#contato')}
-              >
-                Contato
-              </Button>
-              
-              <Button
-                color="inherit"
-                className="nav-link"
-                onClick={() => navigate('/carrinho')}
-                startIcon={
-                  <Badge badgeContent={cartCount} color="error">
-                    <ShoppingCart />
-                  </Badge>
-                }
-              >
-                Carrinho
-              </Button>
-              
-              <Button
-                variant="contained"
-                color="secondary"
-                className="nav-button"
-                startIcon={<Dashboard />}
-                onClick={() => navigate(user?.tipo === 'admin' ? '/admin/dashboard' : '/aluno/dashboard')}
-              >
-                Meu Dashboard
-              </Button>
-
-              {/* Menu do usuário */}
-              <IconButton
-                onClick={handleMenuClick}
-                size="small"
-                sx={{ ml: 2 }}
-                aria-controls={open ? 'account-menu' : undefined}
-                aria-haspopup="true"
-                aria-expanded={open ? 'true' : undefined}
-              >
-                <Avatar sx={{ width: 32, height: 32, bgcolor: 'secondary.main' }}>
-                  <Person />
-                </Avatar>
-              </IconButton>
-              
-              <Menu
-                anchorEl={anchorEl}
-                id="account-menu"
-                open={open}
-                onClose={handleMenuClose}
-                onClick={handleMenuClose}
-                PaperProps={{
-                  elevation: 3,
-                  sx: {
-                    overflow: 'visible',
-                    filter: 'drop-shadow(0px 2px 8px rgba(0,0,0,0.32))',
-                    mt: 1.5,
-                    '& .MuiAvatar-root': {
-                      width: 32,
-                      height: 32,
-                      ml: -0.5,
-                      mr: 1,
-                    },
-                  },
-                }}
-                transformOrigin={{ horizontal: 'right', vertical: 'top' }}
-                anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
-              >
-                <MenuItem disabled>
-                  <Typography variant="body2" color="text.secondary">
-                    {userEmail}
-                  </Typography>
-                </MenuItem>
-                <Box sx={{ mx: 2, my: 1 }}>
-                  <Typography variant="caption" color="text.secondary">
-                    {user?.tipo === 'admin' ? 'Administrador' : 'Aluno'}
-                  </Typography>
-                </Box>
-                <MenuItem onClick={() => navigate('/carrinho')}>
-                  <ShoppingCart fontSize="small" sx={{ mr: 2 }} />
-                  Meu Carrinho
-                  <Badge badgeContent={cartCount} color="error" sx={{ ml: 2 }} />
-                </MenuItem>
-                <MenuItem onClick={() => navigate('/meus-cursos')}>
-                  <School fontSize="small" sx={{ mr: 2 }} />
-                  Meus Cursos
-                </MenuItem>
-                <MenuItem onClick={() => navigate(user?.tipo === 'admin' ? '/admin/dashboard' : '/aluno/dashboard')}>
-                  <Dashboard fontSize="small" sx={{ mr: 2 }} />
-                  Dashboard
-                </MenuItem>
-                <MenuItem onClick={handleLogout}>
-                  <ExitToApp fontSize="small" sx={{ mr: 2 }} />
-                  Sair
-                </MenuItem>
-              </Menu>
-            </div>
-          ) : (
-            <>
-              <IconButton color="inherit" onClick={() => navigate('/carrinho')}>
-                <Badge badgeContent={cartCount} color="error">
-                  <ShoppingCart />
-                </Badge>
-              </IconButton>
-              <IconButton color="inherit" onClick={handleMenuClick}>
-                <MenuIcon />
-              </IconButton>
-              <Menu
-                anchorEl={anchorEl}
-                open={open}
-                onClose={handleMenuClose}
-                PaperProps={{
-                  sx: {
-                    width: 250,
-                    maxWidth: '100%',
-                  },
-                }}
-              >
-                <MenuItem onClick={() => navigate('/')}>Início</MenuItem>
-                <MenuItem onClick={() => navigate('/#sobre')}>Sobre</MenuItem>
-                <MenuItem onClick={() => navigate('/cursos')}>Cursos</MenuItem>
-                <MenuItem onClick={() => navigate('/#contato')}>Contato</MenuItem>
-                <MenuItem onClick={() => navigate('/carrinho')}>
-                  Carrinho {cartCount > 0 && `(${cartCount})`}
-                </MenuItem>
-                <MenuItem onClick={() => navigate(user?.tipo === 'admin' ? '/admin/dashboard' : '/aluno/dashboard')}>
-                  Dashboard
-                </MenuItem>
-                <MenuItem onClick={handleLogout}>Sair</MenuItem>
-              </Menu>
-            </>
-          )}
-        </Toolbar>
-      </Container>
-    </AppBar>
-  );
-
-  // Navbar para visitante
-  const renderVisitorNavbar = () => (
-    <AppBar position="fixed" color="primary" elevation={3}>
-      <Container maxWidth="xl">
-        <Toolbar disableGutters>
-          <div className="nav-logo">
-            <BuildIcon sx={{ mr: 2, fontSize: 32 }} />
-            <Typography
-              variant="h6"
-              noWrap
-              component="a"
-              href="/"
-              className="logo-text"
-              sx={{ cursor: 'pointer' }}
-              onClick={(e) => {
-                e.preventDefault();
-                navigate('/');
-              }}
-            >
-              CLUBE DO MECÂNICO
-            </Typography>
-          </div>
-
-          {!isMobile ? (
-            <div className="nav-links">
-              <Button 
-                color="inherit" 
-                className="nav-link"
-                onClick={() => navigate('/')}
-              >
-                Início
-              </Button>
-              <Button 
-                color="inherit" 
-                className="nav-link"
-                onClick={() => navigate('/#sobre')}
-              >
-                Sobre
-              </Button>
-              <Button 
-                color="inherit" 
-                className="nav-link"
-                onClick={() => navigate('/cursos')}
-                sx={{ fontWeight: 'bold' }}
-              >
-                Cursos
-              </Button>
-              <Button 
-                color="inherit" 
-                className="nav-link"
-                onClick={() => navigate('/#contato')}
-              >
-                Contato
-              </Button>
-              
-              <Button
-                variant="contained"
-                color="secondary"
-                className="nav-button"
-                onClick={() => navigate("/cadastrar")}
-              >
-                Matricule-se
-              </Button>
-              
-              <Button
-                color="inherit"
-                className="nav-link"
-                onClick={() => navigate("/login")}
-              >
-                Login
-              </Button>
-            </div>
-          ) : (
-            <IconButton color="inherit">
-              <MenuIcon />
-            </IconButton>
-          )}
-        </Toolbar>
-      </Container>
-    </AppBar>
-  );
 
   // Funções da página de cursos
   const listarCursos = async () => {
@@ -563,9 +279,11 @@ const CursosPage: React.FC = () => {
 
   return (
     <>
-      {/* Navbar condicional */}
-      {isLoggedIn ? renderLoggedInNavbar() : renderVisitorNavbar()}
-
+      <Navbar
+        userType={isLoggedIn ? (userType as "admin" | "aluno") : null}
+        userName={isLoggedIn ? userName : undefined}
+        userEmail={isLoggedIn ? userEmail : undefined}
+      />
       {/* Espaço para a navbar fixa */}
       <Toolbar />
       
