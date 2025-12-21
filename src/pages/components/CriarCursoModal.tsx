@@ -39,7 +39,7 @@ interface CreateCourseModalProps {
   onCourseCreated?: () => void;
 }
 
-const CriarCursoModal: React.FC<CreateCourseModalProps> = ({ open, onClose, onCourseCreated }) => {
+const CriarCursoModal: React.FC<CreateCourseModalProps> = ({ open, onClose }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);

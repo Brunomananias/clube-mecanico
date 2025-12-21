@@ -68,7 +68,6 @@ const CarrinhoPage: React.FC = () => {
   const [activeStep, setActiveStep] = useState(0);
   const [cupom, setCupom] = useState("");
   const [cupomAplicado, setCupomAplicado] = useState(false);
-  const [openSnackbar, setOpenSnackbar] = useState(false);
   const [loading, setLoading] = useState(false);
   const [loadingCarrinho, setLoadingCarrinho] = useState(true);
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);

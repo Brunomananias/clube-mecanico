@@ -61,11 +61,6 @@ const CursoDetalhePage: React.FC = () => {
       setCurso(response.data);
     } catch (error) {
       console.error("Erro ao carregar cursos:", error);
-      setSnackbar({
-        open: true,
-        message: "Erro ao carregar cursos",
-        severity: "error",
-      });
     }
   };
 
@@ -75,6 +70,7 @@ const CursoDetalhePage: React.FC = () => {
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
+    console.log(event);
   };
 
   useEffect(() => {

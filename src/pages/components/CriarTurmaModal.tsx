@@ -106,11 +106,6 @@ const CriarTurmaModal: React.FC<CriarTurmaModalProps> = ({
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [cursos, setCursos] = useState<ICurso[]>([]);
-  const [snackbar, setSnackbar] = useState({
-      open: false,
-      message: '',
-      severity: 'success' as 'success' | 'error' | 'warning' | 'info'
-    });
   const [professores] = useState<Professor[]>([
     { id: 1, nome: 'Carlos Mendes' },
     { id: 2, nome: 'Ana Santos' },
@@ -124,11 +119,6 @@ const CriarTurmaModal: React.FC<CriarTurmaModalProps> = ({
         setCursos(response.data);
       } catch (error) {
         console.error('Erro ao carregar cursos:', error);
-        setSnackbar({
-          open: true,
-          message: 'Erro ao carregar cursos',
-          severity: 'error'
-        });
       }
     }
   // Resetar formulário quando modal abrir/fechar

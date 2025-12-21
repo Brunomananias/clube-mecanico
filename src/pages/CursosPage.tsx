@@ -19,8 +19,6 @@ import {
   Box,
   Container,
   Toolbar,
-  useMediaQuery,
-  useTheme,
 } from '@mui/material';
 import { Snackbar, Alert } from '@mui/material';
 import {
@@ -64,13 +62,6 @@ interface ITurma {
   status: string;
 }
 
-interface IUser {
-  id: number;
-  nome: string;
-  email: string;
-  tipo: string;
-}
-
 const CursosPage: React.FC = () => {
   const navigate = useNavigate();
   // Estados do navbar
@@ -100,6 +91,7 @@ const CursosPage: React.FC = () => {
 
   const handleMenuClose = () => {
     setAnchorEl(null);
+    console.log(anchorEl);
   };
 
   const handleLogout = () => {

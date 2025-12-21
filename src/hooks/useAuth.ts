@@ -27,16 +27,19 @@ export const useAuth = () => {
   }, []);
 
   const login = useCallback(async (
-    email: string, 
-    password: string, 
-    userType: 'aluno' | 'admin'
-  ) => {
-    try {
-      const response = await authService.login({
-        email,
-        senha: password,
-        tipoUsuario: userType
-      });
+  email: string, 
+  password: string, 
+  userType: 'aluno' | 'admin'
+) => {
+  try {
+    // Converter 'aluno' | 'admin' para 0 | 1
+    const tipo = userType === 'aluno' ? 0 : 1;
+    
+    const response = await authService.login({
+      email,
+      senha: password,
+      tipo // Agora está correto: 0 | 1
+    });
       
       setUser(response.usuario);
       return response;

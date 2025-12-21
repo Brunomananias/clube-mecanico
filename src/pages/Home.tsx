@@ -34,8 +34,9 @@ import VerifiedIcon from "@mui/icons-material/Verified";
 import "./Home.css";
 import logo from "../assets/logo.png";
 import { useNavigate } from "react-router-dom";
-import Navbar from "./components/Navbar"; // Importe o componente Navbar
 import api from "../config/api";
+import Navbar from "./components/Navbar";
+
 interface ICurso {
   id: number;
   codigo: string;

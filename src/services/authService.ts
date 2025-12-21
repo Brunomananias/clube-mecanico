@@ -1,8 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-
 import api from "../config/api";
 
-// authService.ts atualizado
+// Interfaces
 export interface LoginRequest {
   email: string;
   senha: string;
@@ -72,6 +71,22 @@ export const authService = {
         expiresIn: 0
       };
     }
+  },
+
+  // ADICIONE ESTE MÉTODO:
+  logout(): void {
+    // Remove todos os itens de autenticação do localStorage
+    localStorage.removeItem('auth_token');
+    localStorage.removeItem('user');
+    localStorage.removeItem('isLoggedIn');
+    localStorage.removeItem('userType');
+    localStorage.removeItem('userEmail');
+    localStorage.removeItem('token_expiry');
+    
+    // Dispara evento para atualizar outros componentes
+    window.dispatchEvent(new Event('storage'));
+    
+    console.log('Usuário deslogado com sucesso');
   },
 
   getCurrentUser(): Usuario | null {

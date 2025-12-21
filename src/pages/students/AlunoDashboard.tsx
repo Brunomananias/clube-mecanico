@@ -101,6 +101,7 @@ const AlunoDashboard: React.FC = () => {
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
+    console.log(event);
   };
 
   const listarDadosUsuario = async (id: number) => {

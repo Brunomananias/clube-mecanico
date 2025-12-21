@@ -14,7 +14,7 @@ import {
   Mail,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
-import Navbar from '../components/navbar';
+import Navbar from '../components/Navbar';
 
 const PagamentoPendente: React.FC = () => {
   const navigate = useNavigate();

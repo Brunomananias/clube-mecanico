@@ -26,14 +26,13 @@ import {
   Security,
 } from '@mui/icons-material';
 import { useLocation, useNavigate } from 'react-router-dom';
-import Navbar from './components/navbar';
+import Navbar from './components/Navbar';
 
 const MercadoPagoCheckout: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [paymentStatus, setPaymentStatus] = useState<'processing' | 'success' | 'error'>('processing');
-  const [qrCodeData, setQrCodeData] = useState<string>('');
   const [pixCopyCode, setPixCopyCode] = useState<string>('');
 
   const { paymentMethod, total, items } = location.state || {
@@ -53,7 +52,6 @@ const MercadoPagoCheckout: React.FC = () => {
       if (paymentMethod === 'pix') {
         // Simula geração de QR Code PIX
         setTimeout(() => {
-          setQrCodeData('00020101021226870014br.gov.bcb.pix2561qrcodes-pix.mercadopago.com/inst/3c5c5c5c5c5c5c5c520400005303986540510.005802BR5925CLUBE DO MECANICO LTDA6009SAO PAULO62140510qrcodePix6304ABCD');
           setPixCopyCode('00020101021226870014br.gov.bcb.pix2561qrcodes-pix.mercadopago.com/inst/3c5c5c5c5c5c5c5c520400005303986540510.005802BR5925CLUBE DO MECANICO LTDA6009SAO PAULO62140510qrcodePix6304ABCD');
           setLoading(false);
         }, 2000);

@@ -14,8 +14,6 @@ import {
   Alert,
   InputAdornment,
   IconButton,
-  useTheme,
-  useMediaQuery,
   Divider,
   Chip,
 } from "@mui/material";
@@ -40,9 +38,6 @@ const Login: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {

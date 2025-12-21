@@ -23,13 +23,6 @@ const AdminDashboard: React.FC = () => {
   const [modalNovaTurmaOpen, setModalNovaTurmaOpen] = useState(false);
   const userEmail = localStorage.getItem('userEmail') || 'admin@clube.com';
 
-  const handleLogout = () => {
-    localStorage.removeItem('isLoggedIn');
-    localStorage.removeItem('userType');
-    localStorage.removeItem('userEmail');
-    navigate('/login');
-  };
-
   const handleSaveTurma = async (turmaData: any) => {
   console.log('Salvando turma:', turmaData);
   
