@@ -2,8 +2,8 @@
 import axios from 'axios';
 
 // Configuração base
-const API_BASE_URL = 'https://clube-mecanico-api.onrender.com/api';
-
+// const API_BASE_URL = 'https://clube-mecanico-api.onrender.com/api';
+const API_BASE_URL = 'https://localhost:7289/api';
 // Cria instância do axios com configurações padrão
 const api = axios.create({
   baseURL: API_BASE_URL,

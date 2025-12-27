@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useEffect } from "react";
 import {
@@ -62,6 +63,14 @@ interface PaymentMethod {
   icon: React.ReactNode;
 }
 
+interface PagamentoResponse {
+  success: boolean;
+  url?: string;
+  pedidoId?: number;
+  metodo?: string;
+  message?: string;
+}
+
 const CarrinhoPage: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -76,6 +85,7 @@ const CarrinhoPage: React.FC = () => {
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
   const [pedidoId, setPedidoId] = useState<number | null>(null);
+  const [pedidoCriado, setPedidoCriado] = useState<boolean>(false);
 
   // Métodos de pagamento
   const paymentMethods: PaymentMethod[] = [
@@ -120,11 +130,14 @@ const CarrinhoPage: React.FC = () => {
         }));
 
         setCarrinho(itens);
+      } else {
+        setCarrinho([]);
       }
     } catch (error) {
       console.error("Erro ao buscar carrinho:", error);
       setSnackbarMessage("Erro ao carregar carrinho");
       setSnackbarOpen(true);
+      setCarrinho([]);
     } finally {
       setLoadingCarrinho(false);
     }
@@ -148,8 +161,17 @@ const CarrinhoPage: React.FC = () => {
     const urlParams = new URLSearchParams(window.location.search);
     const pedidoParam = urlParams.get('pedidoId');
     if (pedidoParam) {
-      setPedidoId(parseInt(pedidoParam));
-      verificarStatusPedido(parseInt(pedidoParam));
+      const id = parseInt(pedidoParam);
+      setPedidoId(id);
+      verificarStatusPedido(id);
+    }
+  }, []);
+
+  // Verificar se há pedido salvo no localStorage
+  useEffect(() => {
+    const savedPedidoId = localStorage.getItem('ultimoPedidoId');
+    if (savedPedidoId && !pedidoId) {
+      setPedidoId(parseInt(savedPedidoId));
     }
   }, []);
 
@@ -162,9 +184,16 @@ const CarrinhoPage: React.FC = () => {
 
       if (response.data.success) {
         await buscarCarrinho();
+        setSnackbarMessage("Curso adicionado ao carrinho!");
+        setSnackbarOpen(true);
+      } else {
+        setSnackbarMessage(response.data.message || "Erro ao adicionar ao carrinho");
+        setSnackbarOpen(true);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erro ao adicionar ao carrinho:", error);
+      setSnackbarMessage(error.response?.data?.message || "Erro ao adicionar ao carrinho");
+      setSnackbarOpen(true);
     }
   };
 
@@ -174,10 +203,15 @@ const CarrinhoPage: React.FC = () => {
 
       if (response.data.success) {
         setCarrinho(carrinho.filter((item) => item.carrinhoId !== carrinhoId));
+        setSnackbarMessage("Item removido do carrinho");
+        setSnackbarOpen(true);
+      } else {
+        setSnackbarMessage(response.data.message || "Erro ao remover item");
+        setSnackbarOpen(true);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erro ao remover item:", error);
-      setSnackbarMessage("Erro ao remover item do carrinho");
+      setSnackbarMessage(error.response?.data?.message || "Erro ao remover item do carrinho");
       setSnackbarOpen(true);
     }
   };
@@ -188,20 +222,38 @@ const CarrinhoPage: React.FC = () => {
       return;
     }
 
-    // Atualiza localmente
-    setCarrinho(
-      carrinho.map((item) =>
-        item.carrinhoId === carrinhoId
-          ? { ...item, quantidade: novaQuantidade }
-          : item
-      )
-    );
+    try {
+      // Atualizar no backend
+      const response = await api.put(`/carrinho/atualizar/${carrinhoId}`, {
+        quantidade: novaQuantidade
+      });
+
+      if (response.data.success) {
+        // Atualiza localmente
+        setCarrinho(
+          carrinho.map((item) =>
+            item.carrinhoId === carrinhoId
+              ? { ...item, quantidade: novaQuantidade }
+              : item
+          )
+        );
+      } else {
+        setSnackbarMessage("Erro ao atualizar quantidade");
+        setSnackbarOpen(true);
+        // Reverter visualmente
+        buscarCarrinho();
+      }
+    } catch (error) {
+      setSnackbarMessage("Erro ao atualizar quantidade");
+      setSnackbarOpen(true);
+      buscarCarrinho();
+    }
   };
 
   const handleAplicarCupom = () => {
     if (cupom === "BEMVINDO10") {
       setCupomAplicado(true);
-      setSnackbarMessage("Cupom aplicado com sucesso!");
+      setSnackbarMessage("Cupom aplicado com sucesso! 10% de desconto.");
       setSnackbarOpen(true);
     } else {
       setSnackbarMessage("Cupom inválido");
@@ -210,6 +262,12 @@ const CarrinhoPage: React.FC = () => {
   };
 
   const handleFinalizarCompra = () => {
+    if (carrinho.length === 0) {
+      setSnackbarMessage("Carrinho vazio");
+      setSnackbarOpen(true);
+      return;
+    }
+
     if (activeStep === 0) {
       setActiveStep(1);
       setPaymentDialogOpen(true);
@@ -222,24 +280,9 @@ const CarrinhoPage: React.FC = () => {
     navigate("/cursos");
   };
 
-  const handlePayment = async () => {
-    if (carrinho.length === 0) {
-      setSnackbarMessage("Carrinho vazio");
-      setSnackbarOpen(true);
-      return;
-    }
-
-    if (!selectedPaymentMethod) {
-      setSnackbarMessage("Selecione um método de pagamento");
-      setSnackbarOpen(true);
-      return;
-    }
-
-    setLoading(true);
-    setPaymentDialogOpen(false);
-
+  // Função para criar o pedido antes do pagamento
+  const criarPedido = async (): Promise<number | null> => {
     try {
-      // Calcular total
       const subtotal = carrinho.reduce(
         (total, item) => total + item.valor * item.quantidade,
         0
@@ -247,7 +290,102 @@ const CarrinhoPage: React.FC = () => {
       const descontoCupom = cupomAplicado ? subtotal * 0.1 : 0;
       const total = subtotal - descontoCupom;
 
-      // Chamar API para criar pagamento no backend
+      // Chamar API para criar pedido
+      const response = await api.post("/pix/gerar-cobranca", {
+        valor: total,
+        metodoPagamento: selectedPaymentMethod,
+        cupom: cupomAplicado ? cupom : null,
+        itens: carrinho.map(item => ({
+          cursoId: item.cursoId,
+          titulo: item.titulo,
+          quantidade: item.quantidade,
+          valor: item.valor
+        }))
+      });
+
+      if (response.data.success) {
+        const pedidoId = response.data.pedidoId;
+        setPedidoId(pedidoId);
+        setPedidoCriado(true);
+        localStorage.setItem('ultimoPedidoId', pedidoId.toString());
+        return pedidoId;
+      } else {
+        throw new Error(response.data.message || "Erro ao criar pedido");
+      }
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || "Erro ao criar pedido");
+    }
+  };
+
+ const handlePayment = async () => {
+  if (carrinho.length === 0) {
+    setSnackbarMessage("Carrinho vazio");
+    setSnackbarOpen(true);
+    return;
+  }
+
+  if (!selectedPaymentMethod) {
+    setSnackbarMessage("Selecione um método de pagamento");
+    setSnackbarOpen(true);
+    return;
+  }
+
+  setLoading(true);
+  setPaymentDialogOpen(false);
+
+  try {
+    // **Para PIX - Fluxo Correto:**
+    if (selectedPaymentMethod === "pix") {
+      // PASSO 1: Criar o pedido primeiro
+      const pedidoResponse = await api.post("/pix/criar-pedido", {
+        valor: total,
+        metodoPagamento: "pix",
+        cupom: cupomAplicado ? cupom : null,
+        itens: carrinho.map(item => ({
+          cursoId: item.cursoId,
+          titulo: item.titulo,
+          quantidade: item.quantidade,
+          valor: item.valor
+        }))
+      });
+
+      console.log("Resposta criar pedido:", pedidoResponse.data);
+
+      if (!pedidoResponse.data.success) {
+        throw new Error(pedidoResponse.data.message || "Erro ao criar pedido");
+      }
+
+      const pedidoId = pedidoResponse.data.pedidoId;
+      
+      // PASSO 2: Obter dados do usuário logado
+      const userData = JSON.parse(localStorage.getItem('user') || '{}');
+      console.log("Dados do usuário:", userData);
+      
+      // PASSO 3: Gerar cobrança PIX com os dados CORRETOS
+      const pixResponse = await api.post("/pix/gerar-cobranca", {
+        pedidoId: pedidoId,                    // ← OBRIGATÓRIO
+        alunoId: userData.id || userData.userId || 1, // ← OBRIGATÓRIO
+        cpf: userData.cpf || "00000000000",    // ← OPCIONAL (pode ser null)
+        nome: userData.nome || userData.name || "Cliente" // ← OPCIONAL
+      });
+
+      console.log("Resposta gerar cobrança PIX:", pixResponse.data);
+
+      if (pixResponse.data.success) {
+        // PASSO 4: Redirecionar para página do PIX
+        navigate(`/pagamento/pix/${pedidoId}`, {
+          state: {
+            pixData: pixResponse.data,
+            pedidoId: pedidoId,
+            total: total
+          }
+        });
+      } else {
+        throw new Error(pixResponse.data.message || "Erro ao gerar PIX");
+      }
+    } 
+    // **Para outros métodos (cartão/boleto) - manter igual:**
+    else {
       const response = await api.post("/pagamento/criar-pagamento", {
         valorCurso: total,
         metodoPagamento: selectedPaymentMethod,
@@ -259,62 +397,64 @@ const CarrinhoPage: React.FC = () => {
         }))
       });
 
-      if (response.data.success) {
-        if (response.data.url) {
-          // Salvar pedidoId para verificação posterior
-          if (response.data.pedidoId) {
-            setPedidoId(response.data.pedidoId);
-            localStorage.setItem('ultimoPedidoId', response.data.pedidoId);
-          }
-          
-          // Redireciona para o Mercado Pago
-          window.location.href = response.data.url;
-        } else {
-          // Se não tem URL, mostrar mensagem de sucesso
-          setActiveStep(2);
-          setSnackbarMessage("Pedido criado com sucesso!");
-          setSnackbarOpen(true);
-          
-          // Limpar carrinho local
-          setCarrinho([]);
+      if (response.data.success && response.data.url) {
+        if (response.data.pedidoId) {
+          localStorage.setItem('ultimoPedidoId', response.data.pedidoId);
         }
+        window.location.href = response.data.url;
       } else {
         throw new Error(response.data.message || "Erro ao criar pagamento");
       }
-    } catch (error: any) {
-      console.error("Erro:", error);
-      setSnackbarMessage(
-        error.response?.data?.message || 
-        error.message || 
-        "Erro ao processar pagamento. Tente novamente."
-      );
-      setSnackbarOpen(true);
-      setActiveStep(0);
-    } finally {
-      setLoading(false);
     }
+  } catch (error: any) {
+    console.error("Erro detalhado:", error);
+    setSnackbarMessage(
+      error.response?.data?.message || 
+      error.message || 
+      "Erro ao processar pagamento. Tente novamente."
+    );
+    setSnackbarOpen(true);
+    setActiveStep(0);
+  } finally {
+    setLoading(false);
+  }
+};
+
+  const limparCarrinho = () => {
+    // Limpar carrinho no backend
+    carrinho.forEach(item => {
+      api.delete(`/carrinho/remover/${item.carrinhoId}`).catch(console.error);
+    });
+    
+    // Limpar carrinho local
+    setCarrinho([]);
   };
 
   const verificarStatusPedido = async (pedidoId: number) => {
     try {
       const response = await api.get(`/pagamento/verificar-status/${pedidoId}`);
       
-      if (response.data.pedido === "Aprovado") {
+      if (response.data.pedido === "Aprovado" || response.data.status === "aprovado") {
         setSnackbarMessage("Pagamento confirmado! Você já pode acessar seus cursos.");
         setSnackbarOpen(true);
         setActiveStep(2);
         
         // Limpar carrinho
-        setCarrinho([]);
+        limparCarrinho();
         localStorage.removeItem('ultimoPedidoId');
         
         // Redirecionar para meus cursos após 3 segundos
         setTimeout(() => {
           navigate("/meus-cursos");
         }, 3000);
+      } else if (response.data.pedido === "Pendente" || response.data.status === "pendente") {
+        // Pedido ainda pendente, continuar verificando
+        setTimeout(() => verificarStatusPedido(pedidoId), 5000);
       }
     } catch (error) {
       console.error("Erro ao verificar status:", error);
+      // Tentar novamente após 10 segundos
+      setTimeout(() => verificarStatusPedido(pedidoId), 10000);
     }
   };
 
@@ -344,6 +484,7 @@ const CarrinhoPage: React.FC = () => {
         }}
       >
         <CircularProgress />
+        <Typography sx={{ ml: 2 }}>Carregando carrinho...</Typography>
       </Box>
     );
   }
@@ -368,6 +509,9 @@ const CarrinhoPage: React.FC = () => {
               </Typography>
               <Typography variant="body2">
                 Valor total: <strong>R$ {total.toFixed(2)}</strong>
+              </Typography>
+              <Typography variant="body2">
+                Método de pagamento: <strong>{selectedPaymentMethod === 'pix' ? 'PIX' : selectedPaymentMethod === 'credit_card' ? 'Cartão de Crédito' : 'Boleto Bancário'}</strong>
               </Typography>
             </Box>
           )}
@@ -461,6 +605,7 @@ const CarrinhoPage: React.FC = () => {
                       variant="contained"
                       startIcon={<ArrowBack />}
                       onClick={() => navigate("/cursos")}
+                      sx={{ mt: 2 }}
                     >
                       Continuar Comprando
                     </Button>
@@ -535,6 +680,7 @@ const CarrinhoPage: React.FC = () => {
                                           item.quantidade - 1
                                         )
                                       }
+                                      disabled={loading}
                                     >
                                       <Remove fontSize="small" />
                                     </IconButton>
@@ -549,6 +695,7 @@ const CarrinhoPage: React.FC = () => {
                                           item.quantidade + 1
                                         )
                                       }
+                                      disabled={loading}
                                     >
                                       <Add fontSize="small" />
                                     </IconButton>
@@ -570,6 +717,7 @@ const CarrinhoPage: React.FC = () => {
                               edge="end"
                               onClick={() => handleRemoveItem(item.carrinhoId)}
                               color="error"
+                              disabled={loading}
                             >
                               <Delete />
                             </IconButton>
@@ -592,7 +740,7 @@ const CarrinhoPage: React.FC = () => {
                     placeholder="Digite seu cupom"
                     value={cupom}
                     onChange={(e) => setCupom(e.target.value)}
-                    disabled={cupomAplicado}
+                    disabled={cupomAplicado || loading}
                     sx={{ flex: 1 }}
                     InputProps={{
                       endAdornment: cupomAplicado && (
@@ -603,7 +751,7 @@ const CarrinhoPage: React.FC = () => {
                   <Button
                     variant="outlined"
                     onClick={handleAplicarCupom}
-                    disabled={cupomAplicado || !cupom}
+                    disabled={cupomAplicado || !cupom || loading}
                   >
                     {cupomAplicado ? "Aplicado" : "Aplicar"}
                   </Button>
@@ -754,6 +902,8 @@ const CarrinhoPage: React.FC = () => {
                         <CircularProgress size={24} color="inherit" sx={{ mr: 1 }} />
                         Processando...
                       </>
+                    ) : selectedPaymentMethod === 'pix' ? (
+                      "Pagar com PIX"
                     ) : (
                       "Pagar com Mercado Pago"
                     )}
@@ -764,6 +914,7 @@ const CarrinhoPage: React.FC = () => {
                     fullWidth
                     sx={{ mt: 2 }}
                     onClick={handleVoltarParaCarrinho}
+                    disabled={loading}
                   >
                     Alterar método de pagamento
                   </Button>

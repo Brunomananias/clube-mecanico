@@ -11,21 +11,34 @@ import {
 } from '@mui/material';
 import {
   Add,
+  PictureAsPdf,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import CriarCursoModal from '../components/CriarCursoModal';
 import CriarTurmaModal from '../components/CriarTurmaModal';
+import AdicionarPdfModal from '../components/AdicionarPdfModal';
 
 const AdminDashboard: React.FC = () => {
   const navigate = useNavigate();
   const [modalOpen, setModalOpen] = useState(false);
   const [modalNovaTurmaOpen, setModalNovaTurmaOpen] = useState(false);
   const userEmail = localStorage.getItem('userEmail') || 'admin@clube.com';
+ const [modalPdfOpen, setModalPdfOpen] = useState(false);
 
+  const handleSavePdf = (pdfData: any) => {
+    console.log('PDF salvo com sucesso:', pdfData);
+    // Aqui você pode:
+    // 1. Atualizar a lista de PDFs
+    // 2. Mostrar uma notificação
+    // 3. Recarregar dados se necessário
+    alert('PDF adicionado com sucesso!');
+  };
   const handleSaveTurma = async (turmaData: any) => {
   console.log('Salvando turma:', turmaData);
   
+  
+
   try {
     // Simulação de salvamento
     // const novaTurma = {
@@ -83,6 +96,25 @@ const AdminDashboard: React.FC = () => {
             Nova Turma
           </Button>
         </Box>
+         <Box sx={{ mb: 4 }}>
+          <Button
+            variant="contained"
+            color="secondary"
+            startIcon={<PictureAsPdf />}
+            onClick={() => setModalPdfOpen(true)}
+            sx={{ 
+              px: 4,
+              py: 1.5,
+              borderRadius: 2,
+              boxShadow: 2,
+              '&:hover': {
+                boxShadow: 4,
+              }
+            }}
+          >
+            Adicionar PDF Complementar
+          </Button>
+        </Box>
 
         {/* Seções de Gerenciamento */}
         <Box sx={{ 
@@ -118,6 +150,11 @@ const AdminDashboard: React.FC = () => {
       onClose={() => setModalNovaTurmaOpen(false)}
       onSave={handleSaveTurma}
 />
+<AdicionarPdfModal
+        open={modalPdfOpen}
+        onClose={() => setModalPdfOpen(false)}
+        onSave={handleSavePdf}
+      />
     </>
   );
 };

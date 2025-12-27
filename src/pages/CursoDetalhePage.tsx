@@ -64,9 +64,13 @@ const CursoDetalhePage: React.FC = () => {
     }
   };
 
-  const handleAddToCart = () => {
+  const handleAddToCartOrLogin = () => {
+  if (isLoggedIn) {
     navigate("/carrinho", { state: { curso } });
-  };
+  } else {
+    navigate("/login", { state: { from: `/curso/${id}` } });
+  }
+};
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
@@ -254,18 +258,16 @@ const CursoDetalhePage: React.FC = () => {
                     </Box>
                   </Box>
                   
-                  {isLoggedIn ??
                   <Button
                     variant="contained"
                     size="large"
                     fullWidth
                     startIcon={<ShoppingCart />}
-                    onClick={handleAddToCart}
+                    onClick={handleAddToCartOrLogin}
                     sx={{ mb: 2, py: 1.5 }}
                   >
-                    Adicionar ao Carrinho
+                    {isLoggedIn ? "Adicionar ao Carrinho" : "Entrar para Comprar"}
                   </Button>
-                  }
 
                   <Button
                     variant="outlined"

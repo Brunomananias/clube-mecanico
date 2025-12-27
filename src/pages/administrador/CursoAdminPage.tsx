@@ -33,7 +33,6 @@ import {
   School,
   AccessTime,
   People,
-  Schedule,
   CheckCircle,
   Block,
   Refresh,
@@ -42,37 +41,37 @@ import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import api from '../../config/api';
 
-interface Curso {
+interface ICurso {
   id: number;
-  titulo: string;
+  codigo: string;
+  nome: string;
   descricao: string;
+  fotoUrl: string;
   valor: number;
-  duracao: string;
-  horas: number;
+  duracaoHoras: string;
   nivel: string;
-  categoria: string;
-  status: 'ativo' | 'inativo';
-  imagem: string;
-  dataCriacao: string;
-  totalAlunos: number;
-  avaliacao: number;
+  maxAlunos: number;
+  ativo: boolean;
+  conteudoProgramatico: string;
+  certificadoDisponivel: string;
+  destaques: string[];
+  cor: string;
 }
 
 const CursosAdminPage: React.FC = () => {
   const navigate = useNavigate();
-  const [cursos, setCursos] = useState<Curso[]>([]);
-  const [filteredCursos, setFilteredCursos] = useState<Curso[]>([]);
+  const [cursos, setCursos] = useState<ICurso[]>([]);
+  const [filteredCursos, setFilteredCursos] = useState<ICurso[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<'todos' | 'ativo' | 'inativo'>('todos');
-  const [filterCategoria, setFilterCategoria] = useState('todos');
   const [loading, setLoading] = useState(true);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [cursoToDelete, setCursoToDelete] = useState<Curso | null>(null);
+  const [cursoToDelete, setCursoToDelete] = useState<ICurso | null>(null);
 
   // Dados simulados - em produção viria da API
   const buscarCursos = async () => {
   try {
-    const response = await api.get<Curso[]>("/cursos");
+    const response = await api.get<ICurso[]>("/cursos");
     setCursos(response.data);
   } catch (error) {
     console.error("Erro ao buscar cursos:", error);
@@ -93,27 +92,17 @@ const CursosAdminPage: React.FC = () => {
     // Filtro por busca
     if (searchTerm) {
       resultado = resultado.filter(curso =>
-        curso.titulo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        curso.descricao.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        curso.categoria.toLowerCase().includes(searchTerm.toLowerCase())
+        curso.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        curso.descricao.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
 
     // Filtro por status
     if (filterStatus !== 'todos') {
-      resultado = resultado.filter(curso => curso.status === filterStatus);
+      resultado = resultado.filter(curso => curso.ativo);
     }
-
-    // Filtro por categoria
-    if (filterCategoria !== 'todos') {
-      resultado = resultado.filter(curso => curso.categoria === filterCategoria);
-    }
-
     setFilteredCursos(resultado);
-  }, [searchTerm, filterStatus, filterCategoria, cursos]);
-
-  // Categorias únicas para filtro
-  const categorias = [...new Set(cursos.map(curso => curso.categoria))];
+  }, [searchTerm, filterStatus, cursos]);
 
   // Funções de manipulação
   const handleEditCurso = (id: number) => {
@@ -124,7 +113,7 @@ const CursosAdminPage: React.FC = () => {
     navigate(`/curso/${id}`);
   };
 
-  const handleDeleteClick = (curso: Curso) => {
+  const handleDeleteClick = (curso: ICurso) => {
     setCursoToDelete(curso);
     setDeleteDialogOpen(true);
   };
@@ -147,25 +136,27 @@ const CursosAdminPage: React.FC = () => {
     }
   };
 
-  const handleToggleStatus = async (curso: Curso) => {
+  const handleToggleStatus = async (curso: ICurso) => {
     try {
-      const novoStatus = curso.status === 'ativo' ? 'inativo' : 'ativo';
-      
+      const novoStatus = curso.ativo;
+
       // Simulação de atualização
-      console.log('Atualizando status do curso:', curso.id, 'para', novoStatus);
-      
+      console.log("Atualizando status do curso:", curso.id, "para", novoStatus);
+
       // Em produção:
       // await fetch(`/api/cursos/${curso.id}`, {
       //   method: 'PUT',
       //   headers: { 'Content-Type': 'application/json' },
       //   body: JSON.stringify({ status: novoStatus })
       // });
-      
-      setCursos(cursos.map(c =>
-        c.id === curso.id ? { ...c, status: novoStatus } : c
-      ));
+
+      setCursos(
+        cursos.map((c) =>
+          c.id === curso.id ? { ...c, status: novoStatus } : c
+        )
+      );
     } catch (error) {
-      console.error('Erro ao alterar status:', error);
+      console.error("Erro ao alterar status:", error);
     }
   };
 
@@ -264,24 +255,6 @@ const CursosAdminPage: React.FC = () => {
                 icon={<Block />}
               />
             </Box>
-            
-            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-              <Chip
-                label="Todas Categorias"
-                onClick={() => setFilterCategoria('todos')}
-                color={filterCategoria === 'todos' ? 'primary' : 'default'}
-                variant={filterCategoria === 'todos' ? 'filled' : 'outlined'}
-              />
-              {categorias.map(categoria => (
-                <Chip
-                  key={categoria}
-                  label={categoria}
-                  onClick={() => setFilterCategoria(categoria)}
-                  color={filterCategoria === categoria ? 'primary' : 'default'}
-                  variant={filterCategoria === categoria ? 'filled' : 'outlined'}
-                />
-              ))}
-            </Box>
           </Box>
           
           <Box sx={{ mt: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -315,7 +288,7 @@ const CursosAdminPage: React.FC = () => {
               <TableHead>
                 <TableRow sx={{ bgcolor: 'primary.light' }}>
                   <TableCell>Curso</TableCell>
-                  <TableCell>Categoria/Nível</TableCell>
+                  <TableCell>Nível</TableCell>
                   <TableCell>Valor</TableCell>
                   <TableCell>Alunos</TableCell>
                   <TableCell>Status</TableCell>
@@ -336,8 +309,8 @@ const CursosAdminPage: React.FC = () => {
                         }}>
                           <Box
                             component="img"
-                            src={curso.imagem}
-                            alt={curso.titulo}
+                            src={curso.fotoUrl}
+                            alt={curso.nome}
                             sx={{ 
                               width: '100%', 
                               height: '100%',
@@ -347,7 +320,7 @@ const CursosAdminPage: React.FC = () => {
                         </Box>
                         <Box>
                           <Typography variant="subtitle2" fontWeight="bold">
-                            {curso.titulo}
+                            {curso.nome}
                           </Typography>
                           <Typography variant="caption" color="text.secondary" sx={{ 
                             display: '-webkit-box',
@@ -360,13 +333,7 @@ const CursosAdminPage: React.FC = () => {
                           <Box sx={{ display: 'flex', gap: 1, mt: 0.5 }}>
                             <Chip
                               icon={<AccessTime fontSize="small" />}
-                              label={curso.duracao}
-                              size="small"
-                              variant="outlined"
-                            />
-                            <Chip
-                              icon={<Schedule fontSize="small" />}
-                              label={`${curso.horas}h`}
+                              label={curso.duracaoHoras}
                               size="small"
                               variant="outlined"
                             />
@@ -376,12 +343,6 @@ const CursosAdminPage: React.FC = () => {
                     </TableCell>
                     <TableCell>
                       <Stack spacing={1}>
-                        <Chip
-                          label={curso.categoria}
-                          size="small"
-                          color="primary"
-                          variant="outlined"
-                        />
                         <Chip
                           label={curso.nivel}
                           size="small"
@@ -406,7 +367,7 @@ const CursosAdminPage: React.FC = () => {
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                         <People fontSize="small" color="action" />
                         <Typography variant="body1" fontWeight="medium">
-                          {curso.totalAlunos}
+                          {curso.maxAlunos}
                         </Typography>
                         <Typography variant="caption" color="text.secondary">
                           alunos
@@ -415,10 +376,10 @@ const CursosAdminPage: React.FC = () => {
                     </TableCell>
                     <TableCell>
                       <Chip
-                        label={curso.status === 'ativo' ? 'Ativo' : 'Inativo'}
-                        color={curso.status === 'ativo' ? 'success' : 'default'}
+                        label={curso.ativo === true ? 'Ativo' : 'Inativo'}
+                        color={curso.ativo === true ? 'success' : 'default'}
                         size="small"
-                        icon={curso.status === 'ativo' ? <CheckCircle /> : <Block />}
+                        icon={curso.ativo ? <CheckCircle /> : <Block />}
                         onClick={() => handleToggleStatus(curso)}
                         sx={{ cursor: 'pointer' }}
                       />
@@ -485,10 +446,10 @@ const CursosAdminPage: React.FC = () => {
               </Typography>
               <Alert severity="warning" sx={{ mt: 2 }}>
                 <Typography variant="body2" fontWeight="bold">
-                  {cursoToDelete.titulo}
+                  {cursoToDelete.nome}
                 </Typography>
                 <Typography variant="caption">
-                  Esta ação não pode ser desfeita. {cursoToDelete.totalAlunos} alunos estão matriculados neste curso.
+                  Esta ação não pode ser desfeita. {cursoToDelete.maxAlunos} alunos estão matriculados neste curso.
                 </Typography>
               </Alert>
             </>

@@ -15,6 +15,7 @@ import PagamentoFalha from './pages/pagamento/PagamentoFalha';
 import PagamentoPendente from './pages/pagamento/PagamentoPendente';
 import CursosAdminPage from './pages/administrador/CursoAdminPage';
 import { authService } from './services/authService'; // Importe o authService
+import PixPaymentPage from './pages/PixPaymentPage';
 
 // Componente para rotas protegidas
 // Componente para rotas protegidas - VERSÃO CORRIGIDA
@@ -118,7 +119,7 @@ function App() {
         <Route path="/cadastrar" element={<CadastroAlunoPage />} />
         <Route path="/cursos" element={<CursosPage />} />
         <Route path="/curso/:id" element={<CursoDetalhePage />} />
-        
+        <Route path="/pagamento/pix/:pedidoId" element={<PixPaymentPage />} />
         {/* Rotas que requerem autenticação (mas não role específico) */}
         <Route 
           path="/carrinho" 

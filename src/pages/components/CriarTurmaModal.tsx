@@ -24,7 +24,6 @@ import {
   CalendarToday,
   People,
   AccessTime,
-  Person,
   CheckCircle,
 } from '@mui/icons-material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
@@ -55,11 +54,6 @@ interface TurmaParaEnvio {
   vagasTotal: number;
   vagasDisponiveis: number;
   status: 'ativa' | 'inativa' | 'encerrada';
-}
-
-interface Professor {
-  id: number;
-  nome: string;
 }
 
 interface ICurso {
@@ -106,13 +100,6 @@ const CriarTurmaModal: React.FC<CriarTurmaModalProps> = ({
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [cursos, setCursos] = useState<ICurso[]>([]);
-  const [professores] = useState<Professor[]>([
-    { id: 1, nome: 'Carlos Mendes' },
-    { id: 2, nome: 'Ana Santos' },
-    { id: 3, nome: 'Roberto Silva' },
-    { id: 4, nome: 'Fernanda Lima' },
-  ]);
-
     const listarCursos = async () => {
       try {
         const response = await api.get<ICurso[]>("/cursos");
@@ -367,31 +354,6 @@ const CriarTurmaModal: React.FC<CriarTurmaModalProps> = ({
                     ),
                   }}
                 />
-
-                {/* Professor */}
-                <FormControl fullWidth error={!!errors.professor}>
-                  <InputLabel>Professor *</InputLabel>
-                  <Select
-                    value={formData.professor}
-                    label="Professor *"
-                    onChange={(e) => handleChange('professor', e.target.value)}
-                    startAdornment={<Person sx={{ mr: 1, color: 'action.active' }} />}
-                  >
-                    <MenuItem value="">
-                      <em>Selecione um professor</em>
-                    </MenuItem>
-                    {professores.map((prof) => (
-                      <MenuItem key={prof.id} value={prof.nome}>
-                        {prof.nome}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                  {errors.professor && (
-                    <Typography variant="caption" color="error">
-                      {errors.professor}
-                    </Typography>
-                  )}
-                </FormControl>
 
                 {/* Vagas Total */}
                 <TextField
