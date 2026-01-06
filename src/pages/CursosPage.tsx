@@ -136,7 +136,7 @@ const CursosPage: React.FC = () => {
       const response = await api.get(`/cursos/${cursoId}/turmas`);
       const turmasData = response.data.dados || [];
       const turmasAtivas = turmasData.filter((turma: any) => 
-        turma.status === 'ABERTO'
+        turma.status === 'ATIVA'
       );
       
       setTurmasPorCurso(prev => ({
@@ -502,7 +502,7 @@ const CursosPage: React.FC = () => {
                               <MenuItem key={turma.id} value={turma.id}>
                                 <Box>
                                   <Typography variant="body2">
-                                    {formatarData(turma.dataInicio)} - {turma.horario}
+                                    {formatarData(turma.dataInicio)} / {formatarData(turma.dataFim)} - {turma.horario}
                                   </Typography>
                                   <Typography variant="caption" color="text.secondary">
                                     {turma.vagasDisponiveis} vaga(s) - Prof. {turma.professor}

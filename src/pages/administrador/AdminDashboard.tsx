@@ -34,34 +34,24 @@ const AdminDashboard: React.FC = () => {
     // 3. Recarregar dados se necessário
     alert('PDF adicionado com sucesso!');
   };
-  const handleSaveTurma = async (turmaData: any) => {
-  console.log('Salvando turma:', turmaData);
-  
-  
+//   const handleSaveTurma = async (turmaData: any) => {
+//     const novaTurma = {
+//       cursoId: parseInt(turmaData.cursoId),
+//       dataInicio: turmaData.dataInicio,
+//       dataFim: turmaData.dataFim,
+//       horario: turmaData.horario,
+//       professor: turmaData.professor,
+//       vagasTotal: turmaData.vagasTotal,
+//       vagasDisponiveis: turmaData.vagasDisponiveis,
+//       status: turmaData.status
+//     };
 
-  try {
-    // Simulação de salvamento
-    // const novaTurma = {
-    //   id: turmas.length + 1,
-    //   cursoId: parseInt(turmaData.cursoId),
-    //   cursoNome: cursos.find(c => c.id === parseInt(turmaData.cursoId))?.titulo || '',
-    //   dataInicio: turmaData.dataInicio,
-    //   dataFim: turmaData.dataFim,
-    //   horario: turmaData.horario,
-    //   professor: turmaData.professor,
-    //   vagasTotal: turmaData.vagasTotal,
-    //   vagasDisponiveis: turmaData.vagasDisponiveis,
-    //   status: turmaData.status
-    // };
-    
-    // // setTurmas([...turmas, novaTurma]);
-    // console.log('Turma simulada criada:', novaTurma);
-    
-  } catch (error) {
-    console.error('Erro ao criar turma:', error);
-    throw error;
-  }
-};
+//     const response = await api.post("/turmas", novaTurma);
+//     alert("turma criada com sucesso!")
+//     setModalNovaTurmaOpen(false);
+//     return response.data;
+  
+// };
 
   return (
     <>
@@ -70,7 +60,7 @@ const AdminDashboard: React.FC = () => {
       
       <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
         {/* Cabeçalho */}
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4, flexWrap: "wrap", gap: 2 }}>
           <Box>
             <Typography variant="h4" fontWeight="bold" color="secondary">
               Painel Administrativo
@@ -79,9 +69,18 @@ const AdminDashboard: React.FC = () => {
               Administrador: {userEmail}
             </Typography>
           </Box>
+          <Box
+            sx={{
+              display:"flex",
+              gap: 2,
+              flexWrap: "wrap"
+            }}>
+
+          
           <Button
             variant="contained"
             color="primary"
+            sx={{whiteSpace: "nowrap"}}
             startIcon={<Add />}
             onClick={() => setModalOpen(true)} // Abre o modal
           >
@@ -95,8 +94,9 @@ const AdminDashboard: React.FC = () => {
           >
             Nova Turma
           </Button>
+          </Box>
         </Box>
-         <Box sx={{ mb: 4 }}>
+         <Box sx={{ mb: 4, display: "flex", justifyContent: "center" }}>
           <Button
             variant="contained"
             color="secondary"
@@ -148,7 +148,6 @@ const AdminDashboard: React.FC = () => {
       <CriarTurmaModal
       open={modalNovaTurmaOpen}
       onClose={() => setModalNovaTurmaOpen(false)}
-      onSave={handleSaveTurma}
 />
 <AdicionarPdfModal
         open={modalPdfOpen}

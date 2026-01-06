@@ -16,7 +16,7 @@ import PagamentoPendente from './pages/pagamento/PagamentoPendente';
 import CursosAdminPage from './pages/administrador/CursoAdminPage';
 import { authService } from './services/authService'; // Importe o authService
 import PixPaymentPage from './pages/PixPaymentPage';
-
+import AlunoPerfil from './pages/components/AlunoPerfil';
 // Componente para rotas protegidas
 // Componente para rotas protegidas - VERSÃO CORRIGIDA
 const PrivateRoute = ({ children, requiredRole }: { children: React.ReactNode, requiredRole?: 0 | 1 }) => {
@@ -167,6 +167,7 @@ function App() {
           } 
         />
         
+        <Route path="/aluno/perfil" element={<AlunoPerfil />} />
         {/* Rotas protegidas por role */}
         <Route 
           path="/aluno/dashboard" 

@@ -605,7 +605,7 @@ const Navbar: React.FC<NavbarProps> = ({ userType, userName, userEmail }) => {
               <HomeIcon sx={{ color: accentColor }} />
               <Typography variant="body2">Site Principal</Typography>
             </Box>
-          </MenuItem>
+          </MenuItem>          
 
           {/* Item 5: Login/Cadastro (se não logado) */}
           {!userType && (

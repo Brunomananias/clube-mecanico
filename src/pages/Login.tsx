@@ -91,18 +91,6 @@ const Login: React.FC = () => {
     }
   };
 
-  const handleDemoLogin = (type: 0 | 1) => {
-    if (type === 1) {
-      setEmail("admin@clubedomecanico.com");
-      setPassword("Admin@123");
-      setUserType(1);
-    } else {
-      setEmail("aluno@exemplo.com");
-      setPassword("Aluno@123");
-      setUserType(0);
-    }
-  };
-
   const getUserTypeLabel = (type: 0 | 1) => {
     return type === 1 ? "Administrador" : "Aluno";
   };
@@ -163,7 +151,7 @@ const Login: React.FC = () => {
                     borderWidth: 2,
                   }}
                 >
-                  Aluno (0)
+                  Aluno
                 </Button>
               </Box>
               <Box sx={{ flex: { xs: "1 1 100%", sm: "1" } }}>
@@ -180,25 +168,10 @@ const Login: React.FC = () => {
                     borderWidth: 2,
                   }}
                 >
-                  Administrador (1)
+                  Administrador
                 </Button>
               </Box>
             </Box>
-          </Box>
-
-          {/* Indicador de Tipo Ativo */}
-          <Box className="user-type-indicator" sx={{ mt: 2, mb: 3 }}>
-            <Chip
-              icon={userType === 1 ? <AdminIcon /> : <SchoolIcon />}
-              label={
-                userType === 1
-                  ? "Modo Administrador (1)"
-                  : "Modo Aluno (0)"
-              }
-              color={userType === 1 ? "secondary" : "primary"}
-              variant="outlined"
-              sx={{ fontWeight: "bold" }}
-            />
           </Box>
 
           {/* Formulário */}
@@ -293,47 +266,6 @@ const Login: React.FC = () => {
               {loading ? "Entrando..." : "Entrar"}
             </Button>
 
-            {/* Login Rápido para Demonstração */}
-            <Box className="demo-login" sx={{ mt: 3, mb: 2 }}>
-              <Typography variant="body2" color="text.secondary" align="center">
-                Demonstração rápida:
-              </Typography>
-              <Box
-                sx={{
-                  display: "flex",
-                  gap: 1,
-                  mt: 1,
-                  flexWrap: "wrap",
-                }}
-              >
-                <Box sx={{ flex: { xs: "1 1 100%", sm: "1" } }}>
-                  <Button
-                    fullWidth
-                    variant="outlined"
-                    size="small"
-                    onClick={() => handleDemoLogin(0)}
-                    disabled={loading}
-                    startIcon={<SchoolIcon />}
-                  >
-                    Login Aluno Demo (0)
-                  </Button>
-                </Box>
-                <Box sx={{ flex: { xs: "1 1 100%", sm: "1" } }}>
-                  <Button
-                    fullWidth
-                    variant="outlined"
-                    size="small"
-                    color="secondary"
-                    onClick={() => handleDemoLogin(1)}
-                    disabled={loading}
-                    startIcon={<AdminIcon />}
-                  >
-                    Login Admin Demo (1)
-                  </Button>
-                </Box>
-              </Box>
-            </Box>
-
             <Divider sx={{ my: 3 }}>
               <Typography variant="body2" color="text.secondary">
                 ou
@@ -352,7 +284,7 @@ const Login: React.FC = () => {
                   fullWidth
                   variant="outlined"
                   color="primary"
-                  onClick={() => navigate("/cadastro")}
+                  onClick={() => navigate("/cadastrar")}
                   disabled={loading}
                 >
                   Criar Conta de Aluno

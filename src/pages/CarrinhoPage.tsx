@@ -100,13 +100,7 @@ const CarrinhoPage: React.FC = () => {
       name: "PIX",
       type: "pix",
       icon: <Pix />,
-    },
-    {
-      id: "boleto",
-      name: "Boleto Bancário",
-      type: "boleto",
-      icon: <AccountBalance />,
-    },
+    }
   ];
 
   // Buscar itens do carrinho da API

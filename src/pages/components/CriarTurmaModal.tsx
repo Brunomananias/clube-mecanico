@@ -75,13 +75,11 @@ interface ICurso {
 interface CriarTurmaModalProps {
   open: boolean;
   onClose: () => void;
-  onSave: (turmaData: TurmaParaEnvio) => Promise<void>;
 }
 
 const CriarTurmaModal: React.FC<CriarTurmaModalProps> = ({
   open,
   onClose,
-  onSave
 }) => {
   // Estados do formulário
   const [formData, setFormData] = useState<TurmaFormData>({
@@ -129,32 +127,32 @@ const CriarTurmaModal: React.FC<CriarTurmaModalProps> = ({
   }, [open]);
 
   // Validação do formulário
-  const validateForm = (): boolean => {
-    const newErrors: Partial<Record<keyof TurmaFormData, string>> = {};
+  // const validateForm = (): boolean => {
+  //   const newErrors: Partial<Record<keyof TurmaFormData, string>> = {};
 
-    if (!formData.cursoId) newErrors.cursoId = 'Selecione um curso';
-    if (!formData.dataInicio) newErrors.dataInicio = 'Data de início é obrigatória';
-    if (!formData.dataFim) newErrors.dataFim = 'Data de término é obrigatória';
+  //   if (!formData.cursoId) newErrors.cursoId = 'Selecione um curso';
+  //   if (!formData.dataInicio) newErrors.dataInicio = 'Data de início é obrigatória';
+  //   if (!formData.dataFim) newErrors.dataFim = 'Data de término é obrigatória';
     
-    if (formData.dataInicio && formData.dataFim && formData.dataInicio.isAfter(formData.dataFim)) {
-      newErrors.dataFim = 'Data de término deve ser posterior à data de início';
-    }
+  //   if (formData.dataInicio && formData.dataFim && formData.dataInicio.isAfter(formData.dataFim)) {
+  //     newErrors.dataFim = 'Data de término deve ser posterior à data de início';
+  //   }
     
-    if (!formData.horario.trim()) newErrors.horario = 'Horário é obrigatório';
-    if (!formData.professor) newErrors.professor = 'Selecione um professor';
-    if (formData.vagasTotal <= 0) newErrors.vagasTotal = 'Total de vagas deve ser maior que 0';
+  //   if (!formData.horario.trim()) newErrors.horario = 'Horário é obrigatório';
+  //   if (!formData.professor) newErrors.professor = 'Selecione um professor';
+  //   if (formData.vagasTotal <= 0) newErrors.vagasTotal = 'Total de vagas deve ser maior que 0';
     
-    if (formData.vagasDisponiveis > formData.vagasTotal) {
-      newErrors.vagasDisponiveis = 'Vagas disponíveis não podem ser maiores que o total';
-    }
+  //   if (formData.vagasDisponiveis > formData.vagasTotal) {
+  //     newErrors.vagasDisponiveis = 'Vagas disponíveis não podem ser maiores que o total';
+  //   }
     
-    if (formData.vagasDisponiveis < 0) {
-      newErrors.vagasDisponiveis = 'Vagas disponíveis não podem ser negativas';
-    }
+  //   if (formData.vagasDisponiveis < 0) {
+  //     newErrors.vagasDisponiveis = 'Vagas disponíveis não podem ser negativas';
+  //   }
 
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
+  //   setErrors(newErrors);
+  //   return Object.keys(newErrors).length === 0;
+  // };
 
   // Manipular mudanças nos campos
   const handleChange = (field: keyof TurmaFormData, value: any) => {
@@ -184,7 +182,7 @@ const CriarTurmaModal: React.FC<CriarTurmaModalProps> = ({
 
   // Enviar formulário
   const handleSubmit = async () => {
-    if (!validateForm()) return;
+    // if (!validateForm()) return;
 
     setLoading(true);
     setSubmitError('');
@@ -210,7 +208,7 @@ const CriarTurmaModal: React.FC<CriarTurmaModalProps> = ({
       console.log('Dados da turma para envio:', turmaParaEnvio);
       
       // Chamar função de salvar passada via props
-      await onSave(turmaParaEnvio);
+      await api.post("/turmas", turmaParaEnvio);
       
       setSuccess(true);
       

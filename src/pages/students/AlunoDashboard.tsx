@@ -16,19 +16,21 @@ import {
   Tab,
   IconButton,
   Tooltip,
-  LinearProgress,
   Alert,
   Skeleton,
   CardHeader,
   CardActions,
   Badge,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from '@mui/material';
 import {
   Person,
   School,
   MenuBook,
   CardMembership,
-  Download,
   Visibility,
   Edit,
   CheckCircle,
@@ -50,9 +52,14 @@ import {
   Warning,
   VerifiedUser,
   AccountCircle,
-  Cake,
   Add,
   Delete,
+  InsertDriveFile,
+  Image,
+  Link,
+  Article,
+  AudioFile,
+  Close,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
@@ -87,12 +94,58 @@ interface IUsuario {
   enderecos: IEndereco[];
 }
 
+interface ICurso {
+  id: number;
+  nome: string;
+  descricao: string;
+  valor: number;
+  duracaoHoras: number | string;
+  nivel?: string;
+  maxAlunos?: number;
+  conteudoProgramatico?: string;
+  certificadoDisponivel?: string;
+  destaques?: string[];
+  cor?: string;
+}
+
+interface IMatricula {
+  id: number;
+  alunoId: number;
+  cursoId: number;
+  curso: ICurso;
+  dataMatricula: string;
+  progresso: number;
+  status: string;
+  turma: {
+    id: number;
+    cursoId: number;
+    dataInicio: string;
+    dataFim: string;
+    vagasTotal: number;
+  };
+}
+
+interface IConteudoComplementar {
+  id: number;
+  titulo: string;
+  curso_id: number;
+  descricao: string;
+  tipo: string;
+  url: string;
+  dataCriacao: string;
+  cursoNome?: string;
+}
+
 const AlunoDashboard: React.FC = () => {
   const navigate = useNavigate();
   const [tabValue, setTabValue] = React.useState(0);
   const [dadosUsuario, setDadosUsuario] = useState<IUsuario | null>(null);
+  const [matriculas, setMatriculas] = useState<IMatricula[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [conteudosCursoSelecionado, setConteudosCursoSelecionado] = useState<IConteudoComplementar[]>([]);
+  const [cursoSelecionado, setCursoSelecionado] = useState<string>('');
   
   const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
   const userType = localStorage.getItem("userType") || "";
@@ -101,7 +154,6 @@ const AlunoDashboard: React.FC = () => {
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
-    console.log(event);
   };
 
   const listarDadosUsuario = async (id: number) => {
@@ -118,6 +170,126 @@ const AlunoDashboard: React.FC = () => {
     }
   };
 
+  const listarCursos = async (idAluno: number) => {
+    try {
+      console.log('Buscando cursos para aluno:', idAluno);
+      const response = await api.get(`/cursos/buscarCursosAlunos`, {
+        params: {
+          idAluno: idAluno
+        }
+      });
+      
+      console.log('Resposta da API - cursos:', response.data);
+      
+      if (Array.isArray(response.data)) {
+        setMatriculas(response.data);
+        console.log('Cursos carregados:', response.data.length);
+      } else {
+        console.warn('Estrutura de resposta inesperada:', response.data);
+        setMatriculas([]);
+      }
+      
+    } catch (error: any) {
+      console.error('Erro ao buscar cursos:', error);
+      setError(error.response?.data?.message || 'Erro ao carregar cursos');
+    }
+  };
+
+  const listarConteudosComplementaresPorCurso = async (cursoId: number, cursoNome: string): Promise<IConteudoComplementar[]> => {
+  try {
+    console.log(`Buscando conteúdos complementares para curso ${cursoId} (${cursoNome})...`);
+    const response = await api.get(`/ConteudosComplementares/curso/${cursoId}`);
+    
+    console.log(`Resposta de conteúdos para curso ${cursoId}:`, response.data);
+    
+    // A API retorna { success: true, data: [...] }
+    if (response.data && response.data.success === true && Array.isArray(response.data.data)) {
+      // Adicionar nome do curso a cada conteúdo
+      const conteudosComCurso = response.data.data.map((conteudo: any) => ({
+        id: conteudo.id,
+        titulo: conteudo.titulo,
+        curso_id: cursoId,
+        descricao: conteudo.descricao || '',
+        tipo: conteudo.tipo || 'arquivo',
+        url: conteudo.url || '#',
+        dataCriacao: conteudo.dataCriacao || new Date().toISOString(),
+        cursoNome: cursoNome
+      }));
+      console.log(`Conteúdos encontrados para curso ${cursoId}:`, conteudosComCurso.length);
+      return conteudosComCurso;
+    } else {
+      console.log(`Nenhum conteúdo encontrado para curso ${cursoId} ou estrutura inválida:`, response.data);
+      return [];
+    }
+  } catch (error: any) {
+    console.error(`Erro ao buscar conteúdos do curso ${cursoId}:`, error);
+    // Se a API retornar 404 ou outro erro, retornar array vazio
+    return [];
+  }
+};
+
+  const abrirDialogConteudos = async (cursoId: number, cursoNome: string) => {
+    try {
+      setLoading(true);
+      setCursoSelecionado(cursoNome);
+      
+      const conteudos = await listarConteudosComplementaresPorCurso(cursoId, cursoNome);
+      setConteudosCursoSelecionado(conteudos);
+      setDialogOpen(true);
+    } catch (error) {
+      console.error('Erro ao abrir diálogo de conteúdos:', error);
+      setError('Erro ao carregar conteúdos complementares');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fecharDialogConteudos = () => {
+    setDialogOpen(false);
+    setConteudosCursoSelecionado([]);
+    setCursoSelecionado('');
+  };
+
+  const getIconPorTipo = (tipo: string) => {
+    const tipoLower = tipo.toLowerCase();
+    
+    if (tipoLower.includes('pdf') || tipoLower.includes('documento')) {
+      return <PictureAsPdf />;
+    } else if (tipoLower.includes('video') || tipoLower.includes('vídeo')) {
+      return <VideoLibrary />;
+    } else if (tipoLower.includes('audio') || tipoLower.includes('áudio')) {
+      return <AudioFile />;
+    } else if (tipoLower.includes('imagem') || tipoLower.includes('image')) {
+      return <Image />;
+    } else if (tipoLower.includes('link') || tipoLower.includes('url')) {
+      return <Link />;
+    } else if (tipoLower.includes('artigo') || tipoLower.includes('article')) {
+      return <Article />;
+    } else {
+      return <InsertDriveFile />;
+    }
+  };
+
+  const getCorPorTipo = (tipo: string) => {
+    const tipoLower = tipo.toLowerCase();
+    
+    if (tipoLower.includes('pdf') || tipoLower.includes('documento')) {
+      return "#F44336"; // Vermelho
+    } else if (tipoLower.includes('video') || tipoLower.includes('vídeo')) {
+      return "#FF5722"; // Laranja
+    } else if (tipoLower.includes('audio') || tipoLower.includes('áudio')) {
+      return "#9C27B0"; // Roxo
+    } else if (tipoLower.includes('imagem') || tipoLower.includes('image')) {
+      return "#4CAF50"; // Verde
+    } else if (tipoLower.includes('link') || tipoLower.includes('url')) {
+      return "#2196F3"; // Azul
+    } else if (tipoLower.includes('artigo') || tipoLower.includes('article')) {
+      return "#FF9800"; // Âmbar
+    } else {
+      return "#607D8B"; // Azul cinza
+    }
+  };
+
   useEffect(() => {
     const usuarioString = localStorage.getItem("user");
     
@@ -127,7 +299,9 @@ const AlunoDashboard: React.FC = () => {
         const idUsuario = usuario.id;
         
         if (idUsuario) {
+          console.log('ID do usuário para buscar cursos:', idUsuario);
           listarDadosUsuario(idUsuario);
+          listarCursos(idUsuario);
         } else {
           setError("ID do usuário não encontrado");
           setLoading(false);
@@ -196,6 +370,16 @@ const AlunoDashboard: React.FC = () => {
     return { texto: 'Inativo há muito tempo', cor: 'error', icone: <ErrorOutline /> };
   };
 
+  const getStatusMatricula = (status: string) => {
+    switch (status.toLowerCase()) {
+      case 'ativo': return { cor: 'success', texto: 'Ativo' };
+      case 'concluído': return { cor: 'success', texto: 'Concluído' };
+      case 'pendente': return { cor: 'warning', texto: 'Pendente' };
+      case 'cancelado': return { cor: 'error', texto: 'Cancelado' };
+      default: return { cor: 'info', texto: status };
+    }
+  };
+
   const handleLogout = () => {
     localStorage.removeItem('isLoggedIn');
     localStorage.removeItem('userType');
@@ -204,52 +388,6 @@ const AlunoDashboard: React.FC = () => {
     localStorage.removeItem('user');
     navigate('/login');
   };
-
-  // Cursos comprados (dados mockados - você pode integrar com API depois)
-  const purchasedCourses = [
-    { 
-      id: 1, 
-      nome: "Mecânica de Bicicletas Básico", 
-      dataCompra: "10/03/2024",
-      valor: "R$ 297,00",
-      status: "Em andamento",
-      progresso: 75,
-      ultimoAcesso: "Hoje, 14:30",
-      icone: "🚲",
-      categoria: "Básico",
-      horas: 20
-    },
-    { 
-      id: 2, 
-      nome: "Manutenção de Freios Hidráulicos", 
-      dataCompra: "05/03/2024",
-      valor: "R$ 197,00",
-      status: "Em andamento",
-      progresso: 30,
-      ultimoAcesso: "Ontem, 10:15",
-      icone: "🔧",
-      categoria: "Intermediário",
-      horas: 15
-    },
-  ];
-
-  // Conteúdos complementares (dados mockados)
-  const complementaryContent = [
-    { id: 1, titulo: "E-book: Guia de Ferramentas", tipo: "PDF", download: true, cor: "#4CAF50", tamanho: "5.2 MB", icon: <PictureAsPdf /> },
-    { id: 2, titulo: "Vídeo: Dicas de Manutenção", tipo: "Vídeo", download: false, cor: "#FF5722", tamanho: "128 MB", icon: <VideoLibrary /> },
-  ];
-
-  // Certificados (dados mockados)
-  const certificates = [
-    { 
-      id: 1, 
-      curso: "Introdução à Mecânica", 
-      dataEmissao: "20/02/2024",
-      codigo: "CERT-2024-00123",
-      horas: 20,
-      status: "Válido"
-    },
-  ];
 
   if (loading) {
     return (
@@ -386,16 +524,6 @@ const AlunoDashboard: React.FC = () => {
                           fontWeight: 'bold'
                         }}
                       />
-                      {idade && (
-                        <Chip 
-                          label={`${idade} anos`}
-                          icon={<Cake />}
-                          sx={{ 
-                            bgcolor: 'rgba(255, 255, 255, 0.2)',
-                            color: 'white'
-                          }}
-                        />
-                      )}
                     </Box>
                   </Box>
                 </Box>
@@ -595,13 +723,14 @@ const AlunoDashboard: React.FC = () => {
                           Tipo de Conta
                         </Typography>
                         <Typography component="div" variant="body1" fontWeight="medium" sx={{ mt: 0.5 }}>
-                        {dadosUsuario.tipo === 0 ? (
-                          <Chip label="Aluno" color="primary" size="small" />
-                        ) : (
-                          <Chip label="Administrador" color="secondary" size="small" />
-                        )}
-                      </Typography>
+                          {dadosUsuario.tipo === 0 ? (
+                            <Chip label="Aluno" color="primary" size="small" />
+                          ) : (
+                            <Chip label="Administrador" color="secondary" size="small" />
+                          )}
+                        </Typography>
                       </Box>
+                      
                       <Box>
                         <Typography variant="caption" color="text.secondary" display="block">
                           Data de Cadastro
@@ -820,222 +949,190 @@ const AlunoDashboard: React.FC = () => {
             {/* Tab 3: Cursos Comprados */}
             {tabValue === 2 && (
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                {purchasedCourses.map((course) => (
-                  <Paper key={course.id} sx={{ p: 3 }}>
-                    <Box sx={{ 
-                      display: 'flex', 
-                      flexWrap: 'wrap',
-                      alignItems: 'center',
-                      gap: 3
-                    }}>
-                      <Box sx={{ flexShrink: 0 }}>
-                        <Avatar sx={{ 
-                          bgcolor: 'primary.main', 
-                          width: 80, 
-                          height: 80, 
-                          fontSize: 32,
-                          boxShadow: 2
-                        }}>
-                          {course.icone}
-                        </Avatar>
-                      </Box>
-                      
-                      <Box sx={{ flex: '1 1 300px' }}>
-                        <Typography variant="h6" gutterBottom>
-                          {course.nome}
-                        </Typography>
-                        
+                {matriculas.length === 0 ? (
+                  <Paper sx={{ p: 4, textAlign: 'center' }}>
+                    <School sx={{ fontSize: 60, color: 'text.secondary', mb: 2 }} />
+                    <Typography variant="h6" gutterBottom>
+                      Nenhum curso matriculado
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary" paragraph>
+                      Você ainda não possui cursos. Explore nosso catálogo para encontrar cursos interessantes!
+                    </Typography>
+                    <Button
+                      variant="contained"
+                      startIcon={<Add />}
+                      onClick={() => navigate('/cursos')}
+                    >
+                      Explorar Cursos
+                    </Button>
+                  </Paper>
+                ) : (
+                  matriculas.map((matricula) => {
+                    const curso = matricula.curso;
+                    const statusMatricula = getStatusMatricula(matricula.status);
+                    
+                    return (
+                      <Paper key={matricula.id} sx={{ p: 3 }}>
                         <Box sx={{ 
                           display: 'flex', 
-                          flexWrap: 'wrap', 
-                          gap: 2, 
-                          mb: 2,
-                          alignItems: 'center'
+                          flexWrap: 'wrap',
+                          alignItems: 'center',
+                          gap: 3
                         }}>
-                          <Chip 
-                            label={course.categoria}
-                            size="small"
-                            color="primary"
-                            variant="outlined"
-                          />
-                          
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                            <AccessTime fontSize="small" color="action" />
-                            <Typography variant="body2" color="text.secondary">
-                              {course.horas}h
-                            </Typography>
+                          <Box sx={{ flexShrink: 0 }}>
+                            <Avatar 
+                              sx={{ 
+                                bgcolor: curso.cor || 'primary.main', 
+                                width: 80, 
+                                height: 80, 
+                                fontSize: 32,
+                                boxShadow: 2
+                              }}
+                            >
+                              <School />
+                            </Avatar>
                           </Box>
                           
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                            <MonetizationOn fontSize="small" color="action" />
-                            <Typography variant="body2" color="text.secondary">
-                              {course.valor}
+                          <Box sx={{ flex: '1 1 300px' }}>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
+                              <Typography variant="h6" gutterBottom>
+                                {curso.nome}
+                              </Typography>
+                              <Chip 
+                                label={statusMatricula.texto}
+                                color={statusMatricula.cor as any}
+                                size="small"
+                              />
+                            </Box>
+                            
+                            <Typography variant="body2" color="text.secondary" paragraph>
+                              {curso.descricao}
                             </Typography>
+                            
+                            <Box sx={{ 
+                              display: 'flex', 
+                              flexWrap: 'wrap', 
+                              gap: 2, 
+                              mb: 2,
+                              alignItems: 'center'
+                            }}>
+                              {curso.nivel && (
+                                <Chip 
+                                  label={curso.nivel}
+                                  size="small"
+                                  color="primary"
+                                  variant="outlined"
+                                />
+                              )}
+                              
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                <AccessTime fontSize="small" color="action" />
+                                <Typography variant="body2" color="text.secondary">
+                                  {curso.duracaoHoras || "N/A"}h
+                                </Typography>
+                              </Box>
+                              
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                <MonetizationOn fontSize="small" color="action" />
+                                <Typography variant="body2" color="text.secondary">
+                                  R$ {curso.valor ? curso.valor.toFixed(2).replace('.', ',') : "0,00"}
+                                </Typography>
+                              </Box>
+                              
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                <CalendarToday fontSize="small" color="action" />
+                                <Typography variant="body2" color="text.secondary">
+                                  Matriculado em: {formatarDataSimples(matricula.dataMatricula)}
+                                </Typography>
+                              </Box>
+                            </Box>
+                            
+                            {curso.destaques && curso.destaques.length > 0 && (
+                              <Box sx={{ mt: 2 }}>
+                                <Typography variant="caption" color="text.secondary" display="block" gutterBottom>
+                                  Destaques:
+                                </Typography>
+                                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                                  {curso.destaques.map((destaque, index) => (
+                                    <Chip 
+                                      key={index}
+                                      label={destaque}
+                                      size="small"
+                                      variant="filled"
+                                      sx={{ bgcolor: 'primary.light', color: 'primary.contrastText' }}
+                                    />
+                                  ))}
+                                </Box>
+                              </Box>
+                            )}
                           </Box>
-                          
-                          <Typography variant="body2" color="text.secondary">
-                            Último acesso: {course.ultimoAcesso}
-                          </Typography>
                         </Box>
-                        
-                        <Box>
-                          <Box sx={{ 
-                            display: 'flex', 
-                            justifyContent: 'space-between',
-                            mb: 0.5
-                          }}>
-                            <Typography variant="body2" color="text.secondary">
-                              Progresso: {course.progresso}%
-                            </Typography>
-                            <Typography variant="body2" color="text.secondary">
-                              {course.status}
-                            </Typography>
-                          </Box>
-                          <LinearProgress 
-                            variant="determinate" 
-                            value={course.progresso} 
-                            sx={{ 
-                              height: 8, 
-                              borderRadius: 4,
-                              backgroundColor: 'action.hover'
-                            }}
-                            color={course.progresso > 50 ? "success" : course.progresso > 0 ? "warning" : "inherit"}
-                          />
-                        </Box>
-                      </Box>
-                      
-                      <Box sx={{ 
-                        display: 'flex', 
-                        gap: 1,
-                        minWidth: 200
-                      }}>
-                        <Button
-                          variant="contained"
-                          fullWidth
-                          startIcon={<Visibility />}
-                          onClick={() => navigate(`/curso/${course.id}`)}
-                          sx={{ flex: 1 }}
-                        >
-                          Acessar Curso
-                        </Button>
-                        <Button
-                          variant="outlined"
-                          fullWidth
-                          startIcon={<School />}
-                          sx={{ flex: 1 }}
-                        >
-                          Detalhes
-                        </Button>
-                      </Box>
-                    </Box>
-                  </Paper>
-                ))}
+                      </Paper>
+                    );
+                  })
+                )}
               </Box>
             )}
 
-            {/* Tab 4: Conteúdos Complementares */}
+            {/* Tab 4: Conteúdos Complementares (geral) */}
             {tabValue === 3 && (
-              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
-                {complementaryContent.map((content) => (
-                  <Card key={content.id} sx={{ 
-                    flex: '1 1 250px',
-                    minWidth: 250,
-                    maxWidth: 'calc(25% - 12px)',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    transition: 'transform 0.2s, box-shadow 0.2s',
-                    '&:hover': {
-                      transform: 'translateY(-4px)',
-                      boxShadow: 6
-                    }
-                  }}>
-                    <CardContent sx={{ flexGrow: 1 }}>
-                      <Box sx={{ 
-                        height: 120, 
-                        bgcolor: content.cor + '20', 
-                        borderRadius: 2,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        mb: 2,
-                        border: `2px solid ${content.cor}40`
-                      }}>
+              <Box>
+                <Typography variant="h6" gutterBottom sx={{ mb: 3 }}>
+                  <MenuBook sx={{ verticalAlign: 'middle', mr: 1 }} />
+                  Conteúdos Complementares
+                </Typography>
+                <Typography variant="body2" color="text.secondary" paragraph sx={{ mb: 3 }}>
+                  Clique em "Conteúdos Complementares" em qualquer curso para visualizar os materiais disponíveis.
+                </Typography>
+                
+                {matriculas.length === 0 ? (
+                  <Paper sx={{ p: 4, textAlign: 'center' }}>
+                    <MenuBook sx={{ fontSize: 60, color: 'text.secondary', mb: 2 }} />
+                    <Typography variant="h6" gutterBottom>
+                      Nenhum curso matriculado
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary" paragraph>
+                      Matricule-se em um curso para ter acesso aos conteúdos complementares.
+                    </Typography>
+                    <Button
+                      variant="contained"
+                      startIcon={<Add />}
+                      onClick={() => navigate('/cursos')}
+                    >
+                      Explorar Cursos
+                    </Button>
+                  </Paper>
+                ) : (
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                    {matriculas.map((matricula) => (
+                      <Paper key={matricula.id} sx={{ p: 3 }}>
                         <Box sx={{ 
-                          color: content.cor,
-                          fontSize: 48,
-                          display: 'flex',
+                          display: 'flex', 
+                          justifyContent: 'space-between',
                           alignItems: 'center',
-                          justifyContent: 'center'
+                          flexWrap: 'wrap',
+                          gap: 2
                         }}>
-                          {content.icon}
-                        </Box>
-                      </Box>
-                      
-                      <Typography variant="h6" gutterBottom sx={{ 
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        display: '-webkit-box',
-                        WebkitLineClamp: 2,
-                        WebkitBoxOrient: 'vertical',
-                        minHeight: 64
-                      }}>
-                        {content.titulo}
-                      </Typography>
-                      
-                      <Box sx={{ 
-                        display: 'flex', 
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        mb: 2
-                      }}>
-                        <Chip 
-                          label={content.tipo}
-                          size="small"
-                          variant="outlined"
-                          sx={{ 
-                            borderColor: content.cor,
-                            color: content.cor
-                          }}
-                        />
-                        
-                        <Typography variant="caption" color="text.secondary">
-                          {content.tamanho}
-                        </Typography>
-                      </Box>
-                      
-                      <Box sx={{ display: 'flex', gap: 1, mt: 'auto' }}>
-                        <Button
-                          variant="outlined"
-                          size="small"
-                          startIcon={<Visibility />}
-                          fullWidth
-                          sx={{ flex: 1 }}
-                        >
-                          Visualizar
-                        </Button>
-                        
-                        {content.download && (
+                          <Box>
+                            <Typography variant="h6" gutterBottom>
+                              {matricula.curso.nome}
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary">
+                              {matricula.curso.descricao}
+                            </Typography>
+                          </Box>
                           <Button
-                            variant="contained"
-                            size="small"
-                            startIcon={<Download />}
-                            fullWidth
-                            sx={{ 
-                              flex: 1,
-                              backgroundColor: content.cor,
-                              '&:hover': {
-                                backgroundColor: content.cor,
-                                opacity: 0.9
-                              }
-                            }}
+                            variant="outlined"
+                            startIcon={<MenuBook />}
+                            onClick={() => abrirDialogConteudos(matricula.curso.id, matricula.curso.nome)}
                           >
-                            Baixar
+                            Ver Conteúdos
                           </Button>
-                        )}
-                      </Box>
-                    </CardContent>
-                  </Card>
-                ))}
+                        </Box>
+                      </Paper>
+                    ))}
+                  </Box>
+                )}
               </Box>
             )}
 
@@ -1043,79 +1140,90 @@ const AlunoDashboard: React.FC = () => {
             {tabValue === 4 && (
               <Box>
                 <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3, mb: 3 }}>
-                  {certificates.map((cert) => (
-                    <Paper key={cert.id} sx={{ 
-                      flex: '1 1 300px',
-                      minWidth: 300,
-                      maxWidth: 'calc(50% - 12px)',
-                      p: 3,
-                      display: 'flex',
-                      flexDirection: 'column',
-                      borderLeft: '4px solid',
-                      borderLeftColor: 'success.main'
-                    }}>
-                      <Box sx={{ 
-                        display: 'flex', 
-                        justifyContent: 'space-between',
-                        alignItems: 'flex-start',
-                        mb: 2
+                  {matriculas
+                    .filter(matricula => matricula.status.toLowerCase() === 'concluído' || matricula.progresso === 100)
+                    .map((matricula) => (
+                      <Paper key={matricula.id} sx={{ 
+                        flex: '1 1 300px',
+                        minWidth: 300,
+                        maxWidth: 'calc(50% - 12px)',
+                        p: 3,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        borderLeft: '4px solid',
+                        borderLeftColor: 'success.main'
                       }}>
-                        <Box>
-                          <Typography variant="h6" color="primary" gutterBottom>
-                            <CardMembership sx={{ verticalAlign: 'middle', mr: 1 }} />
-                            {cert.curso}
-                          </Typography>
+                        <Box sx={{ 
+                          display: 'flex', 
+                          justifyContent: 'space-between',
+                          alignItems: 'flex-start',
+                          mb: 2
+                        }}>
+                          <Box>
+                            <Typography variant="h6" color="primary" gutterBottom>
+                              <CardMembership sx={{ verticalAlign: 'middle', mr: 1 }} />
+                              {matricula.curso.nome}
+                            </Typography>
+                            
+                            <Stack spacing={0.5}>
+                              <Typography variant="body2" color="text.secondary">
+                                <strong>Código:</strong> CERT-{matricula.id.toString().padStart(6, '0')}
+                              </Typography>
+                              <Typography variant="body2" color="text.secondary">
+                                <strong>Emitido em:</strong> {formatarDataSimples(new Date().toISOString())}
+                              </Typography>
+                              <Typography variant="body2" color="text.secondary">
+                                <strong>Carga horária:</strong> {matricula.curso.duracaoHoras || "N/A"} horas
+                              </Typography>
+                              <Typography variant="body2" color="text.secondary">
+                                <strong>Progresso:</strong> {matricula.progresso}%
+                              </Typography>
+                            </Stack>
+                          </Box>
                           
-                          <Stack spacing={0.5}>
-                            <Typography variant="body2" color="text.secondary">
-                              <strong>Código:</strong> {cert.codigo}
-                            </Typography>
-                            <Typography variant="body2" color="text.secondary">
-                              <strong>Emitido em:</strong> {cert.dataEmissao}
-                            </Typography>
-                            <Typography variant="body2" color="text.secondary">
-                              <strong>Carga horária:</strong> {cert.horas} horas
-                            </Typography>
-                          </Stack>
+                          <Chip 
+                            label="Concluído"
+                            color="success"
+                            size="small"
+                            icon={<CheckCircle />}
+                          />
                         </Box>
                         
-                        <Chip 
-                          label={cert.status}
-                          color="success"
-                          size="small"
-                          icon={<CheckCircle />}
-                        />
-                      </Box>
-                      
-                      <Divider sx={{ my: 2 }} />
-                      
-                      <Box sx={{ 
-                        display: 'flex', 
-                        gap: 1, 
-                        justifyContent: 'flex-end',
-                        mt: 'auto'
-                      }}>
-                        <Tooltip title="Visualizar Certificado">
-                          <IconButton color="primary">
-                            <Visibility />
-                          </IconButton>
-                        </Tooltip>
+                        <Divider sx={{ my: 2 }} />
                         
-                        <Tooltip title="Baixar PDF">
-                          <IconButton color="primary">
-                            <Download />
-                          </IconButton>
-                        </Tooltip>
-                        
-                        <Tooltip title="Compartilhar">
-                          <IconButton color="primary">
-                            <CardMembership />
-                          </IconButton>
-                        </Tooltip>
-                      </Box>
-                    </Paper>
-                  ))}
+                        <Box sx={{ 
+                          display: 'flex', 
+                          gap: 1, 
+                          justifyContent: 'flex-end',
+                          mt: 'auto'
+                        }}>
+                          <Tooltip title="Visualizar Certificado">
+                            <IconButton color="primary">
+                              <Visibility />
+                            </IconButton>
+                          </Tooltip>
+                          
+                          <Tooltip title="Compartilhar">
+                            <IconButton color="primary">
+                              <CardMembership />
+                            </IconButton>
+                          </Tooltip>
+                        </Box>
+                      </Paper>
+                    ))}
                 </Box>
+                
+                {matriculas.filter(m => m.status.toLowerCase() === 'concluído' || m.progresso === 100).length === 0 && (
+                  <Paper sx={{ p: 4, textAlign: 'center' }}>
+                    <CardMembership sx={{ fontSize: 60, color: 'text.secondary', mb: 2 }} />
+                    <Typography variant="h6" gutterBottom>
+                      Nenhum certificado disponível
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary" paragraph>
+                      Complete seus cursos para obter certificados. Certificados serão emitidos automaticamente ao concluir um curso.
+                    </Typography>
+                  </Paper>
+                )}
                 
                 <Paper sx={{ 
                   p: 3, 
@@ -1125,7 +1233,7 @@ const AlunoDashboard: React.FC = () => {
                   borderColor: 'info.main'
                 }}>
                   <Typography variant="body1" gutterBottom sx={{ color: 'info.contrastText' }}>
-                    <strong>Total de certificados:</strong> {certificates.length}
+                    <strong>Total de certificados:</strong> {matriculas.filter(m => m.status.toLowerCase() === 'concluído' || m.progresso === 100).length}
                   </Typography>
                   <Typography variant="body2" sx={{ color: 'info.contrastText', opacity: 0.9 }}>
                     Você pode compartilhar seus certificados nas redes sociais ou incluí-los em seu currículo
@@ -1136,6 +1244,151 @@ const AlunoDashboard: React.FC = () => {
           </Box>
         </Box>
       </Box>
+
+      {/* Diálogo para Conteúdos Complementares */}
+      <Dialog
+        open={dialogOpen}
+        onClose={fecharDialogConteudos}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle>
+          <Box display="flex" justifyContent="space-between" alignItems="center">
+            <Typography variant="h6">
+              <MenuBook sx={{ verticalAlign: 'middle', mr: 1 }} />
+              Conteúdos Complementares - {cursoSelecionado}
+            </Typography>
+            <IconButton onClick={fecharDialogConteudos} size="small">
+              <Close />
+            </IconButton>
+          </Box>
+        </DialogTitle>
+        <DialogContent dividers>
+          {loading ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
+              <Skeleton variant="rectangular" width="100%" height={200} />
+            </Box>
+          ) : conteudosCursoSelecionado.length === 0 ? (
+            <Paper sx={{ p: 4, textAlign: 'center' }}>
+              <MenuBook sx={{ fontSize: 60, color: 'text.secondary', mb: 2 }} />
+              <Typography variant="h6" gutterBottom>
+                Nenhum conteúdo complementar disponível
+              </Typography>
+              <Typography variant="body2" color="text.secondary" paragraph>
+                Este curso ainda não possui conteúdos complementares.
+              </Typography>
+            </Paper>
+          ) : (
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3, pt: 2 }}>
+              {conteudosCursoSelecionado.map((conteudo) => {
+                const cor = getCorPorTipo(conteudo.tipo);
+                const icon = getIconPorTipo(conteudo.tipo);
+                
+                return (
+                  <Card key={conteudo.id} sx={{ 
+                    flex: '1 1 250px',
+                    minWidth: 250,
+                    maxWidth: 'calc(33.333% - 16px)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    transition: 'transform 0.2s, box-shadow 0.2s',
+                    '&:hover': {
+                      transform: 'translateY(-4px)',
+                      boxShadow: 6
+                    }
+                  }}>
+                    <CardContent sx={{ flexGrow: 1 }}>
+                      <Box sx={{ 
+                        height: 100, 
+                        bgcolor: cor + '20', 
+                        borderRadius: 2,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        mb: 2,
+                        border: `2px solid ${cor}40`
+                      }}>
+                        <Box sx={{ 
+                          color: cor,
+                          fontSize: 48,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center'
+                        }}>
+                          {icon}
+                        </Box>
+                      </Box>
+                      
+                      <Typography variant="h6" gutterBottom sx={{ 
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        display: '-webkit-box',
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: 'vertical',
+                        minHeight: 64,
+                        fontSize: '1rem'
+                      }}>
+                        {conteudo.titulo}
+                      </Typography>
+                      
+                      <Typography variant="body2" color="text.secondary" sx={{ 
+                        mb: 2,
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        display: '-webkit-box',
+                        WebkitLineClamp: 3,
+                        WebkitBoxOrient: 'vertical',
+                        minHeight: 60
+                      }}>
+                        {conteudo.descricao || "Sem descrição disponível."}
+                      </Typography>
+                      
+                      <Box sx={{ 
+                        display: 'flex', 
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        mb: 2
+                      }}>
+                        <Chip 
+                          label={conteudo.tipo}
+                          size="small"
+                          variant="outlined"
+                          sx={{ 
+                            borderColor: cor,
+                            color: cor
+                          }}
+                        />
+                        
+                        {conteudo.dataCriacao && (
+                          <Typography variant="caption" color="text.secondary">
+                            {formatarDataSimples(conteudo.dataCriacao)}
+                          </Typography>
+                        )}
+                      </Box>
+                    </CardContent>
+                    <CardActions>
+                      <Button
+                        variant="outlined"
+                        size="small"
+                        startIcon={<Visibility />}
+                        fullWidth
+                        onClick={() => window.open(conteudo.url, '_blank')}
+                      >
+                        Visualizar
+                      </Button>
+                    </CardActions>
+                  </Card>
+                );
+              })}
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={fecharDialogConteudos} color="primary">
+            Fechar
+          </Button>
+        </DialogActions>
+      </Dialog>
     </>
   );
 };
