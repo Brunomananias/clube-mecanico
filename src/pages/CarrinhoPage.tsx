@@ -38,7 +38,6 @@ import {
   CheckCircle,
   CreditCard,
   Pix,
-  AccountBalance,
 } from "@mui/icons-material";
 import { useLocation, useNavigate } from "react-router-dom";
 import api from "../config/api";
@@ -63,14 +62,6 @@ interface PaymentMethod {
   icon: React.ReactNode;
 }
 
-interface PagamentoResponse {
-  success: boolean;
-  url?: string;
-  pedidoId?: number;
-  metodo?: string;
-  message?: string;
-}
-
 const CarrinhoPage: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -85,7 +76,7 @@ const CarrinhoPage: React.FC = () => {
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
   const [pedidoId, setPedidoId] = useState<number | null>(null);
-  const [pedidoCriado, setPedidoCriado] = useState<boolean>(false);
+  const [, setPedidoCriado] = useState<boolean>(false);
 
   // Métodos de pagamento
   const paymentMethods: PaymentMethod[] = [
