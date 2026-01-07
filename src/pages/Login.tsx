@@ -112,7 +112,7 @@ const Login: React.FC = () => {
                 variant="h4"
                 className="login-title"
                 sx={{
-                  background: "linear-gradient(45deg, #1976d2 30%, #21CBF3 90%)",
+                  background: "linear-gradient(45deg, #d26c19ff 30%, #f1b38bff 90%)",
                   WebkitBackgroundClip: "text",
                   WebkitTextFillColor: "transparent",
                   fontWeight: "bold",

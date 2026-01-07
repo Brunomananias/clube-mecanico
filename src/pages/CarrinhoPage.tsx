@@ -76,7 +76,7 @@ const CarrinhoPage: React.FC = () => {
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
   const [pedidoId, setPedidoId] = useState<number | null>(null);
-  const [, setPedidoCriado] = useState<boolean>(false);
+  // const [, setPedidoCriado] = useState<boolean>(false);
 
   // Métodos de pagamento
   const paymentMethods: PaymentMethod[] = [
@@ -266,41 +266,41 @@ const CarrinhoPage: React.FC = () => {
   };
 
   // Função para criar o pedido antes do pagamento
-  const criarPedido = async (): Promise<number | null> => {
-    try {
-      const subtotal = carrinho.reduce(
-        (total, item) => total + item.valor * item.quantidade,
-        0
-      );
-      const descontoCupom = cupomAplicado ? subtotal * 0.1 : 0;
-      const total = subtotal - descontoCupom;
+  // const criarPedido = async (): Promise<number | null> => {
+  //   try {
+  //     const subtotal = carrinho.reduce(
+  //       (total, item) => total + item.valor * item.quantidade,
+  //       0
+  //     );
+  //     const descontoCupom = cupomAplicado ? subtotal * 0.1 : 0;
+  //     const total = subtotal - descontoCupom;
 
-      // Chamar API para criar pedido
-      const response = await api.post("/pix/gerar-cobranca", {
-        valor: total,
-        metodoPagamento: selectedPaymentMethod,
-        cupom: cupomAplicado ? cupom : null,
-        itens: carrinho.map(item => ({
-          cursoId: item.cursoId,
-          titulo: item.titulo,
-          quantidade: item.quantidade,
-          valor: item.valor
-        }))
-      });
+  //     // Chamar API para criar pedido
+  //     const response = await api.post("/pix/gerar-cobranca", {
+  //       valor: total,
+  //       metodoPagamento: selectedPaymentMethod,
+  //       cupom: cupomAplicado ? cupom : null,
+  //       itens: carrinho.map(item => ({
+  //         cursoId: item.cursoId,
+  //         titulo: item.titulo,
+  //         quantidade: item.quantidade,
+  //         valor: item.valor
+  //       }))
+  //     });
 
-      if (response.data.success) {
-        const pedidoId = response.data.pedidoId;
-        setPedidoId(pedidoId);
-        setPedidoCriado(true);
-        localStorage.setItem('ultimoPedidoId', pedidoId.toString());
-        return pedidoId;
-      } else {
-        throw new Error(response.data.message || "Erro ao criar pedido");
-      }
-    } catch (error: any) {
-      throw new Error(error.response?.data?.message || "Erro ao criar pedido");
-    }
-  };
+  //     if (response.data.success) {
+  //       const pedidoId = response.data.pedidoId;
+  //       setPedidoId(pedidoId);
+  //       setPedidoCriado(true);
+  //       localStorage.setItem('ultimoPedidoId', pedidoId.toString());
+  //       return pedidoId;
+  //     } else {
+  //       throw new Error(response.data.message || "Erro ao criar pedido");
+  //     }
+  //   } catch (error: any) {
+  //     throw new Error(error.response?.data?.message || "Erro ao criar pedido");
+  //   }
+  // };
 
  const handlePayment = async () => {
   if (carrinho.length === 0) {
