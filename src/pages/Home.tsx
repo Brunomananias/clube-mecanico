@@ -7,7 +7,6 @@ import {
   Box,
   Card,
   CardContent,
-  IconButton,
   Chip,
   Stack,
   Divider,
@@ -23,9 +22,9 @@ import EngineeringIcon from "@mui/icons-material/Engineering";
 import PedalBikeIcon from "@mui/icons-material/PedalBike";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import SchoolIcon from "@mui/icons-material/School";
-import FacebookIcon from "@mui/icons-material/Facebook";
-import InstagramIcon from "@mui/icons-material/Instagram";
-import YouTubeIcon from "@mui/icons-material/YouTube";
+// import FacebookIcon from "@mui/icons-material/Facebook";
+// import InstagramIcon from "@mui/icons-material/Instagram";
+// import YouTubeIcon from "@mui/icons-material/YouTube";
 import EmailIcon from "@mui/icons-material/Email";
 import PhoneIcon from "@mui/icons-material/Phone";
 import LocationOnIcon from "@mui/icons-material/LocationOn";
@@ -754,7 +753,7 @@ const Home: React.FC = () => {
                 className="footer-redes-sociais"
                 style={{ marginTop: "20px" }}
               >
-                <IconButton
+                {/* <IconButton
                   color="inherit"
                   size="small"
                   className="rede-social"
@@ -777,7 +776,7 @@ const Home: React.FC = () => {
                   sx={{ color: "white" }}
                 >
                   <YouTubeIcon />
-                </IconButton>
+                </IconButton> */}
               </div>
             </div>
 
@@ -798,7 +797,7 @@ const Home: React.FC = () => {
                     sx={{ color: "#90caf9" }}
                   />
                   <Typography variant="body2" sx={{ color: "#b0bec5" }}>
-                    (11) 99999-9999
+                    (31) 99937-8570
                   </Typography>
                 </div>
                 <div className="footer-contato">
@@ -807,7 +806,7 @@ const Home: React.FC = () => {
                     sx={{ color: "#90caf9" }}
                   />
                   <Typography variant="body2" sx={{ color: "#b0bec5" }}>
-                    contato@clubedomecanico.com
+                    clubemecanico2026@gmail.com
                   </Typography>
                 </div>
                 <div className="footer-contato">
@@ -820,9 +819,9 @@ const Home: React.FC = () => {
                     className="contato-endereco"
                     sx={{ color: "#b0bec5" }}
                   >
-                    Av. das Bicicletas, 1234 - Centro
+                    Av. Luiz Paulo Franco, 500 - Belvedere - 30320-570 - Belo Horizonte - MG
                     <br />
-                    São Paulo - SP
+                    Shopping BH2 Mall, andar 2P, Loja 3
                   </Typography>
                 </div>
               </div>
@@ -881,8 +880,6 @@ const Home: React.FC = () => {
                     <strong style={{ color: "white" }}>Secretaria:</strong>
                     <br />
                     Segunda a Sexta: 8h às 18h
-                    <br />
-                    Sábado: 8h às 12h
                   </Typography>
                   <Typography
                     variant="body2"
@@ -891,9 +888,7 @@ const Home: React.FC = () => {
                   >
                     <strong style={{ color: "white" }}>Aulas:</strong>
                     <br />
-                    Manhã, Tarde e Noite
-                    <br />
-                    Turmas aos Sábados
+                    Manhã e Tarde
                   </Typography>
                 </>
               )}
