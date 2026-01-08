@@ -81,7 +81,7 @@ const Home: React.FC = () => {
 
   useEffect(() => {
     listarCursos()
-  })
+  }, [])
 
   const beneficios = [
     "Única escola especializada apenas em bicicletas",
