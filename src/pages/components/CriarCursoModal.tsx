@@ -18,6 +18,7 @@ import {
   MenuItem,
   Paper,
   Stack,
+  Snackbar,
 } from '@mui/material';
 import {
   Close,
@@ -42,6 +43,8 @@ interface CreateCourseModalProps {
 const CriarCursoModal: React.FC<CreateCourseModalProps> = ({ open, onClose }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [snackbarMessage, setSnackbarMessage] = useState("");
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [success, setSuccess] = useState(false);
   const [activeStep, setActiveStep] = useState(0);
 
@@ -138,7 +141,6 @@ const CriarCursoModal: React.FC<CreateCourseModalProps> = ({ open, onClose }) =>
         'Content-Type': 'application/json'
       }
     });
-    
     return response.data;
   };
 
@@ -166,7 +168,7 @@ const CriarCursoModal: React.FC<CreateCourseModalProps> = ({ open, onClose }) =>
 }
     const usuario = JSON.parse(usuarioString);
     const idUsuario = usuario.id;
-        
+      console.log(idUsuario);
     try {
       const courseData = {
         idUsuario,
@@ -184,6 +186,9 @@ const CriarCursoModal: React.FC<CreateCourseModalProps> = ({ open, onClose }) =>
       };
 
       await createCourseWithAxios(courseData);
+      setSnackbarMessage("Curso cadastrado com sucesso!");
+      setSnackbarOpen(true);
+      onClose();
     } catch (err: any) {
       if (axios.isAxiosError(err)) {
         setError(err.response?.data?.message || 'Erro ao criar curso');
@@ -454,6 +459,7 @@ const CriarCursoModal: React.FC<CreateCourseModalProps> = ({ open, onClose }) =>
   );
 
   return (
+  <>
     <Modal open={open} onClose={handleClose}>
       <Box sx={modalStyle}>
         {/* Header */}
@@ -539,7 +545,15 @@ const CriarCursoModal: React.FC<CreateCourseModalProps> = ({ open, onClose }) =>
         </Box>
       </Box>
     </Modal>
-  );
+    
+    <Snackbar
+      open={snackbarOpen}
+      autoHideDuration={6000}
+      onClose={() => setSnackbarOpen(false)}
+      message={snackbarMessage}
+    />
+  </>
+);
 };
 
 export default CriarCursoModal;
