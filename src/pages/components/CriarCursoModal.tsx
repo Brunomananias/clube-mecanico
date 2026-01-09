@@ -160,8 +160,16 @@ const CriarCursoModal: React.FC<CreateCourseModalProps> = ({ open, onClose }) =>
     setLoading(true);
     setError(null);
 
+    const usuarioString = localStorage.getItem("user");
+    if (!usuarioString) {
+    throw new Error("Usuário não encontrado no localStorage");
+}
+    const usuario = JSON.parse(usuarioString);
+    const idUsuario = usuario.id;
+        
     try {
       const courseData = {
+        idUsuario,
         codigo: formData.codigo.trim(),
         nome: formData.nome.trim(),
         descricao: formData.descricao.trim(),
