@@ -573,14 +573,9 @@ const Home: React.FC = () => {
                       className="curso-conteudo"
                       sx={{ flexGrow: 1 }}
                     >
-                       <Typography
-                        variant="body2"
-                        color="text.secondary"
-                        paragraph
-                        className="curso-nome"
-                      >
+                       <h3>
                         {curso.nome}
-                      </Typography>
+                      </h3>
                       <Typography
                         variant="body2"
                         color="text.secondary"
