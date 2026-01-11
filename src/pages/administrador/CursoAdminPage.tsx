@@ -74,12 +74,7 @@ const CursosAdminPage: React.FC = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [cursoToDelete, setCursoToDelete] = useState<ICurso | null>(null);
   const [modalEditarOpen, setModalEditarOpen] = useState(false);
-  const [modalExcluirOpen, setModalExcluirOpen] = useState(false);
   const [cursoSelecionado, setCursoSelecionado] = useState<ICurso | null>(null);
-  const [cursoParaExcluir, setCursoParaExcluir] = useState<{
-    id: number;
-    nome: string;
-  } | null>(null);
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: "",

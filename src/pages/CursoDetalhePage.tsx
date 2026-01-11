@@ -215,7 +215,7 @@ const CursoDetalhePage: React.FC = () => {
   const temTurmasDisponiveis = turmas.length > 0;
   const podeAdicionarAoCarrinho = isLoggedIn && temTurmasDisponiveis && turmaSelecionada !== "";
 
-  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+  const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
   };
 
