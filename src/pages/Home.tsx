@@ -85,7 +85,7 @@ const Home: React.FC = () => {
   const beneficios = [
     "Única escola especializada da região",
     "Certificação reconhecida pela ABRACICLO",
-    "Laboratório por oficina",
+    "Oficina com bikes das melhores marcas",
     "Metodologia 70% prática, 30% teoria",
     "Parceria com 10+ bicicletarias para estágio",
     "Aulas apenas presenciais em ambiente de oficina real",
