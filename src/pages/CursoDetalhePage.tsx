@@ -156,7 +156,11 @@ const CursoDetalhePage: React.FC = () => {
     }
 
     try {
-      const response = await api.post('/carrinho/adicionar', {
+      const usuarioString = localStorage.getItem("user");
+      if (usuarioString) {
+        const usuarioObj = JSON.parse(usuarioString);
+        const response = await api.post('/carrinho/adicionar', {
+        usuarioId: usuarioObj.id,
         cursoId: curso?.id,
         turmaId: turmaSelecionada,
       });
@@ -172,10 +176,12 @@ const CursoDetalhePage: React.FC = () => {
         setTimeout(() => {
           navigate("/carrinho");
         }, 1500);
+      }
+      
       } else {
         setSnackbar({
           open: true,
-          message: response.data.mensagem || "Erro ao adicionar ao carrinho",
+          message: "Erro ao adicionar ao carrinho",
           severity: "error",
         });
       }
@@ -481,16 +487,6 @@ const CursoDetalhePage: React.FC = () => {
                         ))}
                       </Select>
                     </FormControl>
-                    
-                    {turmaSelecionada && (
-                      <Alert severity="success" sx={{ mb: 2 }}>
-                        <Typography variant="body2">
-                          Turma selecionada: {
-                            turmas.find(t => t.id === turmaSelecionada)?.nome
-                          }
-                        </Typography>
-                      </Alert>
-                    )}
                   </>
                 ) : (
                   <Alert severity="warning">

@@ -77,7 +77,7 @@ const CarrinhoPage: React.FC = () => {
   const [snackbarMessage, setSnackbarMessage] = useState("");
   const [pedidoId, setPedidoId] = useState<number | null>(null);
   // const [, setPedidoCriado] = useState<boolean>(false);
-
+  const usuarioString = localStorage.getItem("user");
   // Métodos de pagamento
   const paymentMethods: PaymentMethod[] = [
     {
@@ -97,8 +97,14 @@ const CarrinhoPage: React.FC = () => {
   // Buscar itens do carrinho da API
   const buscarCarrinho = async () => {
     try {
+      if (usuarioString) {
       setLoadingCarrinho(true);
-      const response = await api.get("/carrinho/itens");
+      const usuarioObj = JSON.parse(usuarioString);
+      const response = await api.get("/carrinho/itens", {
+        params: {
+          usuarioId: usuarioObj.id
+        }
+      });
 
       if (response.data.success) {
         const itens = response.data.dados.itens.map((item: any) => ({
@@ -115,6 +121,8 @@ const CarrinhoPage: React.FC = () => {
         }));
 
         setCarrinho(itens);
+      }
+      
       } else {
         setCarrinho([]);
       }
@@ -265,42 +273,12 @@ const CarrinhoPage: React.FC = () => {
     navigate("/cursos");
   };
 
-  // Função para criar o pedido antes do pagamento
-  // const criarPedido = async (): Promise<number | null> => {
-  //   try {
-  //     const subtotal = carrinho.reduce(
-  //       (total, item) => total + item.valor * item.quantidade,
-  //       0
-  //     );
-  //     const descontoCupom = cupomAplicado ? subtotal * 0.1 : 0;
-  //     const total = subtotal - descontoCupom;
-
-  //     // Chamar API para criar pedido
-  //     const response = await api.post("/pix/gerar-cobranca", {
-  //       valor: total,
-  //       metodoPagamento: selectedPaymentMethod,
-  //       cupom: cupomAplicado ? cupom : null,
-  //       itens: carrinho.map(item => ({
-  //         cursoId: item.cursoId,
-  //         titulo: item.titulo,
-  //         quantidade: item.quantidade,
-  //         valor: item.valor
-  //       }))
-  //     });
-
-  //     if (response.data.success) {
-  //       const pedidoId = response.data.pedidoId;
-  //       setPedidoId(pedidoId);
-  //       setPedidoCriado(true);
-  //       localStorage.setItem('ultimoPedidoId', pedidoId.toString());
-  //       return pedidoId;
-  //     } else {
-  //       throw new Error(response.data.message || "Erro ao criar pedido");
-  //     }
-  //   } catch (error: any) {
-  //     throw new Error(error.response?.data?.message || "Erro ao criar pedido");
-  //   }
-  // };
+    const subtotal = carrinho.reduce(
+    (total, item) => total + item.valor * item.quantidade,
+    0
+  );
+  const descontoCupom = cupomAplicado ? subtotal * 0.1 : 0;
+  const total = subtotal - descontoCupom;
 
  const handlePayment = async () => {
   if (carrinho.length === 0) {
@@ -309,90 +287,74 @@ const CarrinhoPage: React.FC = () => {
     return;
   }
 
-  if (!selectedPaymentMethod) {
-    setSnackbarMessage("Selecione um método de pagamento");
-    setSnackbarOpen(true);
-    return;
-  }
-
   setLoading(true);
   setPaymentDialogOpen(false);
 
   try {
-    // **Para PIX - Fluxo Correto:**
-    if (selectedPaymentMethod === "pix") {
-      // PASSO 1: Criar o pedido primeiro
-      const pedidoResponse = await api.post("/pix/criar-pedido", {
-        valor: total,
-        metodoPagamento: "pix",
-        cupom: cupomAplicado ? cupom : null,
-        itens: carrinho.map(item => ({
-          cursoId: item.cursoId,
-          titulo: item.titulo,
-          quantidade: item.quantidade,
-          valor: item.valor
-        }))
-      });
+    if (!usuarioString) {
+      throw new Error("Usuário não autenticado");
+    }
 
-      console.log("Resposta criar pedido:", pedidoResponse.data);
+    const usuarioObj = JSON.parse(usuarioString);
+    
+    // // **CRIAR PEDIDO PRIMEIRO (para AMBOS os métodos)**
+    // const pedidoResponse = await api.post("/pix/criar-pedido", {
+    //   usuarioId: usuarioObj.id,
+    //   cupom: cupomAplicado ? cupom : null,
+    // });
 
-      if (!pedidoResponse.data.success) {
-        throw new Error(pedidoResponse.data.message || "Erro ao criar pedido");
-      }
+    // console.log("Resposta criar pedido:", pedidoResponse.data);
 
-      const pedidoId = pedidoResponse.data.pedidoId;
-      
-      // PASSO 2: Obter dados do usuário logado
+    // if (!pedidoResponse.data.success) {
+    //   throw new Error(pedidoResponse.data.message || "Erro ao criar pedido");
+    // }
+
+    // const pedidoId = pedidoResponse.data.pedidoId;
+    // setPedidoId(pedidoId);
+    
+    // **AGORA PROCESSAR DE ACORDO COM O MÉTODO**
       const userData = JSON.parse(localStorage.getItem('user') || '{}');
-      console.log("Dados do usuário:", userData);
       
-      // PASSO 3: Gerar cobrança PIX com os dados CORRETOS
-      const pixResponse = await api.post("/pix/gerar-cobranca", {
-        pedidoId: pedidoId,                    // ← OBRIGATÓRIO
-        alunoId: userData.id || userData.userId || 1, // ← OBRIGATÓRIO
-        cpf: userData.cpf || "00000000000",    // ← OPCIONAL (pode ser null)
-        nome: userData.nome || userData.name || "Cliente" // ← OPCIONAL
-      });
-
-      console.log("Resposta gerar cobrança PIX:", pixResponse.data);
-
-      if (pixResponse.data.success) {
-        // PASSO 4: Redirecionar para página do PIX
-        navigate(`/pagamento/pix/${pedidoId}`, {
-          state: {
-            pixData: pixResponse.data,
-            pedidoId: pedidoId,
-            total: total
-          }
-        });
-      } else {
-        throw new Error(pixResponse.data.message || "Erro ao gerar PIX");
-      }
-    } 
-    // **Para outros métodos (cartão/boleto) - manter igual:**
-    else {
+      // CORREÇÃO: Enviar os dados diretamente, não dentro de "requestData"
       const response = await api.post("/pagamento/criar-pagamento", {
-        valorCurso: total,
-        metodoPagamento: selectedPaymentMethod,
-        cupom: cupomAplicado ? cupom : null,
-        itens: carrinho.map(item => ({
-          cursoId: item.cursoId,
-          titulo: item.titulo,
-          quantidade: item.quantidade
-        }))
+        PedidoId: pedidoId,                    // ← OBRIGATÓRIO (maiúsculo)
+        UserId: usuarioObj.id,                 // ← OBRIGATÓRIO (maiúsculo)
+        MetodoPagamento: "credit_card",        // ← OBRIGATÓRIO (maiúsculo)
+        ValorCurso: total,                     // ← OBRIGATÓRIO (maiúsculo)
+        EmailCliente: userData.email || usuarioObj.email || "" // ← Adicionei
       });
 
-      if (response.data.success && response.data.url) {
-        if (response.data.pedidoId) {
-          localStorage.setItem('ultimoPedidoId', response.data.pedidoId);
+      if (response.data.success) {
+        let redirectUrl = response.data.url;
+        
+        if (!redirectUrl && response.data.init_point) {
+          redirectUrl = response.data.init_point;
         }
-        window.location.href = response.data.url;
+        
+        if (!redirectUrl && response.data.checkout_url) {
+          redirectUrl = response.data.checkout_url;
+        }
+        
+        if (!redirectUrl && response.data.sandbox_init_point) {
+          redirectUrl = response.data.sandbox_init_point;
+        }
+
+        if (redirectUrl) {
+          // localStorage.setItem('ultimoPedidoId', pedidoId.toString());
+          localStorage.setItem('ultimoPedidoMetodo', 'credit_card');
+          console.log("Redirecionando para:", redirectUrl);
+          window.location.href = redirectUrl;
+        } else {
+          throw new Error("URL de pagamento não encontrada");
+        }
       } else {
         throw new Error(response.data.message || "Erro ao criar pagamento");
       }
-    }
   } catch (error: any) {
-    console.error("Erro detalhado:", error);
+    console.error("Erro detalhado no pagamento:", error);
+    console.error("Response data:", error.response?.data);
+    console.error("Response status:", error.response?.status);
+    
     setSnackbarMessage(
       error.response?.data?.message || 
       error.message || 
@@ -449,14 +411,6 @@ const CarrinhoPage: React.FC = () => {
   };
 
   const steps = ["Carrinho", "Pagamento", "Confirmação"];
-
-  // Cálculos
-  const subtotal = carrinho.reduce(
-    (total, item) => total + item.valor * item.quantidade,
-    0
-  );
-  const descontoCupom = cupomAplicado ? subtotal * 0.1 : 0;
-  const total = subtotal - descontoCupom;
 
   if (loadingCarrinho) {
     return (
@@ -865,11 +819,6 @@ const CarrinhoPage: React.FC = () => {
 
               {activeStep === 1 && (
                 <Box>
-                  <Typography variant="body1" gutterBottom>
-                    <strong>Método selecionado:</strong> {
-                      paymentMethods.find(m => m.id === selectedPaymentMethod)?.name || "Nenhum"
-                    }
-                  </Typography>
                   <Typography variant="h6" color="primary" gutterBottom>
                     Total: R$ {total.toFixed(2)}
                   </Typography>
@@ -879,7 +828,6 @@ const CarrinhoPage: React.FC = () => {
                     fullWidth
                     size="large"
                     onClick={handlePayment}
-                    disabled={!selectedPaymentMethod || loading}
                     sx={{ mt: 2, py: 1.5 }}
                   >
                     {loading ? (
@@ -887,21 +835,8 @@ const CarrinhoPage: React.FC = () => {
                         <CircularProgress size={24} color="inherit" sx={{ mr: 1 }} />
                         Processando...
                       </>
-                    ) : selectedPaymentMethod === 'pix' ? (
-                      "Pagar com PIX"
-                    ) : (
-                      "Pagar com Mercado Pago"
-                    )}
-                  </Button>
-                  
-                  <Button
-                    variant="outlined"
-                    fullWidth
-                    sx={{ mt: 2 }}
-                    onClick={handleVoltarParaCarrinho}
-                    disabled={loading}
-                  >
-                    Alterar método de pagamento
+                    ) : "Pagar"
+                  }
                   </Button>
                 </Box>
               )}
@@ -931,130 +866,9 @@ const CarrinhoPage: React.FC = () => {
                 </Box>
               </Paper>
             )}
-
-            {/* Benefícios */}
-            {activeStep === 0 && (
-              <Paper sx={{ p: 3, mt: 3 }}>
-                <Typography variant="h6" fontWeight="bold" gutterBottom>
-                  Benefícios incluídos
-                </Typography>
-                <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-                    <CheckCircle color="success" fontSize="small" />
-                    <Typography variant="body2">Acesso vitalício</Typography>
-                  </Box>
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-                    <CheckCircle color="success" fontSize="small" />
-                    <Typography variant="body2">Certificado digital</Typography>
-                  </Box>
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-                    <CheckCircle color="success" fontSize="small" />
-                    <Typography variant="body2">Suporte por 1 ano</Typography>
-                  </Box>
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-                    <CheckCircle color="success" fontSize="small" />
-                    <Typography variant="body2">30 dias de garantia</Typography>
-                  </Box>
-                </Box>
-              </Paper>
-            )}
           </Box>
         </Box>
       </Container>
-
-      {/* Dialog de seleção de pagamento */}
-      <Dialog
-        open={paymentDialogOpen}
-        onClose={() => setPaymentDialogOpen(false)}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle>
-          <Typography variant="h6" fontWeight="bold">
-            Selecionar Método de Pagamento
-          </Typography>
-        </DialogTitle>
-
-        <DialogContent>
-          <Typography variant="body2" color="text.secondary" gutterBottom>
-            Total a pagar: <strong>R$ {total.toFixed(2)}</strong>
-          </Typography>
-
-          <Box sx={{ mt: 2 }}>
-            {paymentMethods.map((method) => (
-              <Paper
-                key={method.id}
-                sx={{
-                  p: 2,
-                  mb: 2,
-                  cursor: "pointer",
-                  border:
-                    selectedPaymentMethod === method.id
-                      ? "2px solid #1976d2"
-                      : "1px solid #e0e0e0",
-                  bgcolor:
-                    selectedPaymentMethod === method.id
-                      ? "primary.light"
-                      : "white",
-                  "&:hover": {
-                    bgcolor: "action.hover",
-                  },
-                }}
-                onClick={() => setSelectedPaymentMethod(method.id)}
-              >
-                <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-                  {method.icon}
-                  <Typography variant="body1" fontWeight="medium">
-                    {method.name}
-                  </Typography>
-                </Box>
-
-                {method.type === "pix" && (
-                  <Typography
-                    variant="caption"
-                    color="text.secondary"
-                    sx={{ mt: 1, display: "block" }}
-                  >
-                    Pagamento instantâneo com QR Code
-                  </Typography>
-                )}
-
-                {method.type === "card" && (
-                  <Typography
-                    variant="caption"
-                    color="text.secondary"
-                    sx={{ mt: 1, display: "block" }}
-                  >
-                    Parcele em até 12x
-                  </Typography>
-                )}
-
-                {method.type === "boleto" && (
-                  <Typography
-                    variant="caption"
-                    color="text.secondary"
-                    sx={{ mt: 1, display: "block" }}
-                  >
-                    Pagamento em até 3 dias úteis
-                  </Typography>
-                )}
-              </Paper>
-            ))}
-          </Box>
-        </DialogContent>
-
-        <DialogActions>
-          <Button onClick={() => setPaymentDialogOpen(false)}>Cancelar</Button>
-          <Button
-            variant="contained"
-            onClick={handlePayment}
-            disabled={!selectedPaymentMethod || loading}
-            startIcon={loading ? <CircularProgress size={20} /> : <Payment />}
-          >
-            {loading ? "Processando..." : "Continuar"}
-          </Button>
-        </DialogActions>
-      </Dialog>
 
       <Snackbar
         open={snackbarOpen}
