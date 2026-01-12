@@ -101,6 +101,15 @@ const CursosAdminPage: React.FC = () => {
     }
   };
 
+  const handleCursoCriado = () => {
+  buscarCursos(); // Recarrega a lista
+  setSnackbar({
+    open: true,
+    message: "Curso criado com sucesso!",
+    severity: "success",
+  });
+};
+
   useEffect(() => {
     buscarCursos();
     setCursos(cursos);
@@ -622,9 +631,10 @@ const CursosAdminPage: React.FC = () => {
         </Box>
       </Container>
       <CriarCursoModal
-        open={modalOpen}
-        onClose={() => setModalOpen(false)}
-      />
+      open={modalOpen}
+      onClose={() => setModalOpen(false)}
+      onCourseCreated={handleCursoCriado} // Adicione esta prop
+    />
       {/* Dialog de confirmação de exclusão */}
       <Dialog
         open={deleteDialogOpen}

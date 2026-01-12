@@ -40,7 +40,7 @@ interface CreateCourseModalProps {
   onCourseCreated?: () => void;
 }
 
-const CriarCursoModal: React.FC<CreateCourseModalProps> = ({ open, onClose }) => {
+const CriarCursoModal: React.FC<CreateCourseModalProps> = ({ open, onClose, onCourseCreated }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [snackbarMessage, setSnackbarMessage] = useState("");
@@ -188,6 +188,9 @@ const CriarCursoModal: React.FC<CreateCourseModalProps> = ({ open, onClose }) =>
       await createCourseWithAxios(courseData);
       setSnackbarMessage("Curso cadastrado com sucesso!");
       setSnackbarOpen(true);
+      if (onCourseCreated) {
+        onCourseCreated();
+      }
       onClose();
     } catch (err: any) {
       if (axios.isAxiosError(err)) {
