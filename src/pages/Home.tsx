@@ -83,13 +83,13 @@ const Home: React.FC = () => {
   }, [])
 
   const beneficios = [
-    "Única escola especializada apenas em bicicletas",
+    "Única escola especializada da região",
     "Certificação reconhecida pela ABRACICLO",
-    "Laboratório com bikes das melhores marcas",
+    "Laboratório por oficina",
     "Metodologia 70% prática, 30% teoria",
-    "Parceria com 50+ bicicletarias para estágio",
-    "Aulas presenciais e online ao vivo",
-    "Kit de ferramentas profissional incluso",
+    "Parceria com 10+ bicicletarias para estágio",
+    "Aulas apenas presenciais em ambiente de oficina real",
+    "Disponibilizamos lista para compra de ferramentas e acessórios",
     "Mentoria para abrir sua própria oficina",
   ];
 
@@ -320,7 +320,7 @@ const Home: React.FC = () => {
                     >
                       Oferecemos o caminho para a sua especialização. Se você
                       busca aprofundar seu conhecimento em sistemas específicos
-                      (suspensão, hidráulica, eletrônicos) e se destacar no
+                      (suspensão, canote, eletrônicos) e se destacar no
                       mercado, nossos cursos são a chave para elevar sua
                       carreira.
                     </Typography>

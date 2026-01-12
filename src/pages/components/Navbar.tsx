@@ -48,7 +48,7 @@ interface SectionNavItem extends NavItem {
 
 type NavbarItem = PageNavItem | SectionNavItem;
 
-const Navbar: React.FC<NavbarProps> = ({ userType, userName, userEmail }) => {
+const Navbar: React.FC<NavbarProps> = ({ userType, userEmail }) => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
@@ -206,7 +206,7 @@ const Navbar: React.FC<NavbarProps> = ({ userType, userName, userEmail }) => {
               fontWeight: 800,
               display: { xs: "none", sm: "block" },
               letterSpacing: "0.5px",
-              background: "linear-gradient(90deg, #FFFFFF 0%, #FF9B73 100%)",
+              background: "#FF9B73",
               WebkitBackgroundClip: "text",
               WebkitTextFillColor: "transparent",
               backgroundClip: "text",
@@ -214,27 +214,6 @@ const Navbar: React.FC<NavbarProps> = ({ userType, userName, userEmail }) => {
           >
             CLUBE DO MECÂNICO
           </Typography>
-
-          {/* Tag de tipo de usuário (só mostra se logado) */}
-          {userType && (
-            <Box
-              sx={{
-                ml: 2,
-                px: 1.5,
-                py: 0.5,
-                backgroundColor: secondaryColor,
-                borderRadius: "20px",
-                display: { xs: "none", md: "block" },
-              }}
-            >
-              <Typography
-                variant="caption"
-                sx={{ fontWeight: "bold", color: "white" }}
-              >
-                {userType === "admin" ? "ADMIN" : "ALUNO"}
-              </Typography>
-            </Box>
-          )}
         </Box>
 
         {/* Navegação para desktop */}
@@ -322,13 +301,6 @@ const Navbar: React.FC<NavbarProps> = ({ userType, userName, userEmail }) => {
                 <PersonIcon />
               </Avatar>
               <Box>
-                <Typography
-                  variant="body2"
-                  sx={{ fontWeight: "bold", color: "white" }}
-                >
-                  {userName ||
-                    (userType === "admin" ? "Administrador" : "Aluno")}
-                </Typography>
                 <Typography
                   variant="caption"
                   sx={{ color: "rgba(255, 255, 255, 0.7)" }}
@@ -452,35 +424,11 @@ const Navbar: React.FC<NavbarProps> = ({ userType, userName, userEmail }) => {
                 </Avatar>
                 <Box>
                   <Typography
-                    variant="body1"
-                    sx={{ fontWeight: "bold", color: "white" }}
-                  >
-                    {userName ||
-                      (userType === "admin" ? "Administrador" : "Aluno")}
-                  </Typography>
-                  <Typography
                     variant="caption"
                     sx={{ color: "rgba(255, 255, 255, 0.7)" }}
                   >
                     {userEmail || `${userType}@clube.com`}
                   </Typography>
-                  <Box
-                    sx={{
-                      mt: 0.5,
-                      display: "inline-block",
-                      px: 1.5,
-                      py: 0.25,
-                      backgroundColor: secondaryColor,
-                      borderRadius: "12px",
-                    }}
-                  >
-                    <Typography
-                      variant="caption"
-                      sx={{ color: "white", fontWeight: "bold" }}
-                    >
-                      {userType === "admin" ? "Administrador" : "Aluno"}
-                    </Typography>
-                  </Box>
                 </Box>
               </Box>
             </MenuItem>
