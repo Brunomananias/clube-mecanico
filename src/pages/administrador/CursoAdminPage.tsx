@@ -45,6 +45,7 @@ import api from "../../config/api";
 import EditarCursoModal from "../components/EditarCursoModal"; // Ajuste o caminho
 import { Snackbar } from "@mui/material";
 import Swal from "sweetalert2";
+import CriarCursoModal from "../components/CriarCursoModal";
 
 interface ICurso {
   id: number;
@@ -67,6 +68,7 @@ const CursosAdminPage: React.FC = () => {
   const [cursos, setCursos] = useState<ICurso[]>([]);
   const [filteredCursos, setFilteredCursos] = useState<ICurso[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
+  const [modalOpen, setModalOpen] = useState(false);
   const [filterStatus, setFilterStatus] = useState<
     "todos" | "ativo" | "inativo"
   >("todos");
@@ -329,7 +331,7 @@ const CursosAdminPage: React.FC = () => {
               variant="contained"
               color="primary"
               startIcon={<Add />}
-              onClick={() => navigate("/admin/curso/novo")}
+              onClick={() => setModalOpen(true)}
             >
               Novo Curso
             </Button>
@@ -619,7 +621,10 @@ const CursosAdminPage: React.FC = () => {
           </Button>
         </Box>
       </Container>
-
+      <CriarCursoModal
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+      />
       {/* Dialog de confirmação de exclusão */}
       <Dialog
         open={deleteDialogOpen}

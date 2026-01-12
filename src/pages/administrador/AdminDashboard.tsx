@@ -135,7 +135,9 @@ const AdminDashboard: React.FC = () => {
             }}>
               Ver Todos os Cursos
             </Button>
-            <Button variant="outlined" fullWidth sx={{ mb: 2 }}>
+            <Button variant="outlined" fullWidth sx={{ mb: 2 }}  onClick={() => {
+              setModalOpen(true)
+            }}>
               Criar Novo Curso
             </Button>
           </Paper>
