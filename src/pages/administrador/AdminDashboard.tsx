@@ -130,6 +130,11 @@ const AdminDashboard: React.FC = () => {
               Gerenciamento de Cursos
             </Typography>
             <Divider sx={{ mb: 3 }} />
+             <Button variant="outlined" fullWidth sx={{ mb: 2 }} onClick={() => {
+              navigate("/admin/turmas")
+            }}>
+              Ver Todas as Turmas
+            </Button>
             <Button variant="outlined" fullWidth sx={{ mb: 2 }} onClick={() => {
               navigate("/admin/cursos")
             }}>

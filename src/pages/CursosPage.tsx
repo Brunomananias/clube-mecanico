@@ -19,6 +19,8 @@ import {
   Box,
   Container,
   Toolbar,
+  Pagination,
+  Stack,
 } from '@mui/material';
 import { Snackbar, Alert } from '@mui/material';
 import {
@@ -83,8 +85,12 @@ const CursosPage: React.FC = () => {
     severity: 'success' as 'success' | 'error' | 'warning' | 'info'
   });
 
+  // Estados para paginação
+  const [paginaAtual, setPaginaAtual] = useState(1);
+  const [cursosPorPagina] = useState(6); // 6 cursos por página
+
   // Verificar se o usuário está logado
-   const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
+  const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
   const userType = localStorage.getItem("userType") || "";
   const userEmail = localStorage.getItem("userEmail") || "";
   const userName = localStorage.getItem("userName") || "";
@@ -120,6 +126,7 @@ const CursosPage: React.FC = () => {
     try {
       const response = await api.get<ICurso[]>("/cursos");
       setCursos(response.data);
+      setPaginaAtual(1); // Reseta para primeira página ao buscar novos cursos
     } catch (error) {
       console.error('Erro ao carregar cursos:', error);
       setSnackbar({
@@ -166,6 +173,7 @@ const CursosPage: React.FC = () => {
     navigate(`/curso/${cursoId}`);
   };
 
+  // Filtrar cursos
   const cursosFiltrados = cursos.filter(curso => {
     const titulo = curso.nome || '';
     const descricao = curso.descricao || '';
@@ -177,6 +185,32 @@ const CursosPage: React.FC = () => {
     
     return matchesSearch && matchesNivel;
   });
+
+  // Ordenar cursos
+  const cursosOrdenados = [...cursosFiltrados].sort((a, b) => {
+    switch (ordenacao) {
+      case 'preco-crescente':
+        return a.valor - b.valor;
+      case 'preco-decrescente':
+        return b.valor - a.valor;
+      case 'duracao':
+        return parseInt(a.duracaoHoras) - parseInt(b.duracaoHoras);
+      default: // relevancia
+        return a.id - b.id;
+    }
+  });
+
+  // Calcular índices para paginação
+  const indiceUltimoCurso = paginaAtual * cursosPorPagina;
+  const indicePrimeiroCurso = indiceUltimoCurso - cursosPorPagina;
+  const cursosPaginaAtual = cursosOrdenados.slice(indicePrimeiroCurso, indiceUltimoCurso);
+  const totalPaginas = Math.ceil(cursosOrdenados.length / cursosPorPagina);
+
+  const handleMudarPagina = (_event: React.ChangeEvent<unknown>, valor: number) => {
+    setPaginaAtual(valor);
+    // Rolar para o topo da página
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   const handleAddToCart = async (curso: ICurso) => {
     // Verifica se está logado
@@ -400,14 +434,41 @@ const CursosPage: React.FC = () => {
           </Box>
         </Paper>
 
-        {/* Resultados */}
-        <Typography variant="h6" sx={{ mb: 3 }}>
-          {cursosFiltrados.length} cursos encontrados
-        </Typography>
+        {/* Resultados e Controle de Paginação Superior */}
+        <Box sx={{ 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: 'center', 
+          mb: 3,
+          flexWrap: 'wrap',
+          gap: 2
+        }}>
+          <Typography variant="h6">
+            {cursosOrdenados.length} cursos encontrados
+            {totalPaginas > 1 && ` (Página ${paginaAtual} de ${totalPaginas})`}
+          </Typography>
+          
+          {totalPaginas > 1 && (
+            <Stack direction="row" spacing={1} alignItems="center">
+              <Typography variant="body2" color="text.secondary">
+                Mostrando {cursosPorPagina} por página
+              </Typography>
+              <Pagination
+                count={totalPaginas}
+                page={paginaAtual}
+                onChange={handleMudarPagina}
+                color="primary"
+                size="medium"
+                showFirstButton
+                showLastButton
+              />
+            </Stack>
+          )}
+        </Box>
 
         {/* Lista de Cursos */}
-        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
-          {cursosFiltrados.map((curso) => {
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3, mb: 4 }}>
+          {cursosPaginaAtual.map((curso) => {
             const turmasDisponiveis = turmasPorCurso[curso.id] || [];
             const temTurmas = turmasDisponiveis.length > 0;
             
@@ -584,6 +645,33 @@ const CursosPage: React.FC = () => {
             );
           })}
         </Box>
+
+        {/* Paginação Inferior */}
+        {totalPaginas > 1 && (
+          <Box sx={{ 
+            display: 'flex', 
+            justifyContent: 'center', 
+            mt: 4,
+            mb: 4
+          }}>
+            <Stack spacing={2} alignItems="center">
+              <Pagination
+                count={totalPaginas}
+                page={paginaAtual}
+                onChange={handleMudarPagina}
+                color="primary"
+                size="large"
+                showFirstButton
+                showLastButton
+                siblingCount={1}
+                boundaryCount={1}
+              />
+              <Typography variant="body2" color="text.secondary">
+                Mostrando {indicePrimeiroCurso + 1} a {Math.min(indiceUltimoCurso, cursosOrdenados.length)} de {cursosOrdenados.length} cursos
+              </Typography>
+            </Stack>
+          </Box>
+        )}
 
         {/* Mensagem se não houver cursos */}
         {cursosFiltrados.length === 0 && (

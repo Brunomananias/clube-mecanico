@@ -21,10 +21,6 @@ import {
   Alert,
   Snackbar,
   CircularProgress,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
 } from "@mui/material";
 import {
   Delete,
@@ -97,6 +93,7 @@ const CarrinhoPage: React.FC = () => {
   // Buscar itens do carrinho da API
   const buscarCarrinho = async () => {
     try {
+      console.log(paymentDialogOpen);
       if (usuarioString) {
       setLoadingCarrinho(true);
       const usuarioObj = JSON.parse(usuarioString);

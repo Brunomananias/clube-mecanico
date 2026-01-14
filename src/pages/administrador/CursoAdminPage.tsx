@@ -25,6 +25,7 @@ import {
   TableRow,
   CircularProgress,
   Alert,
+  Pagination,
 } from "@mui/material";
 import {
   Search,
@@ -42,7 +43,7 @@ import {
 import { useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import api from "../../config/api";
-import EditarCursoModal from "../components/EditarCursoModal"; // Ajuste o caminho
+import EditarCursoModal from "../components/EditarCursoModal";
 import { Snackbar } from "@mui/material";
 import Swal from "sweetalert2";
 import CriarCursoModal from "../components/CriarCursoModal";
@@ -82,13 +83,18 @@ const CursosAdminPage: React.FC = () => {
     message: "",
     severity: "success" as "success" | "error" | "warning" | "info",
   });
-  // Dados simulados - em produção viria da API
+
+  // Estados para paginação
+  const [paginaAtual, setPaginaAtual] = useState(1);
+  const [cursosPorPagina] = useState(10); // 10 cursos por página
+
   const buscarCursos = async () => {
     try {
       setLoading(true);
       const response = await api.get<ICurso[]>("/cursos");
       setCursos(response.data);
       setFilteredCursos(response.data);
+      setPaginaAtual(1); // Reseta para primeira página ao buscar
     } catch (error) {
       console.error("Erro ao buscar cursos:", error);
       setSnackbar({
@@ -102,19 +108,16 @@ const CursosAdminPage: React.FC = () => {
   };
 
   const handleCursoCriado = () => {
-  buscarCursos(); // Recarrega a lista
-  setSnackbar({
-    open: true,
-    message: "Curso criado com sucesso!",
-    severity: "success",
-  });
-};
+    buscarCursos(); // Recarrega a lista
+    setSnackbar({
+      open: true,
+      message: "Curso criado com sucesso!",
+      severity: "success",
+    });
+  };
 
   useEffect(() => {
     buscarCursos();
-    setCursos(cursos);
-    setFilteredCursos(cursos);
-    setLoading(false);
   }, []);
 
   // Filtrar cursos
@@ -132,10 +135,25 @@ const CursosAdminPage: React.FC = () => {
 
     // Filtro por status
     if (filterStatus !== "todos") {
-      resultado = resultado.filter((curso) => curso.ativo);
+      resultado = resultado.filter((curso) => 
+        filterStatus === "ativo" ? curso.ativo : !curso.ativo
+      );
     }
     setFilteredCursos(resultado);
+    setPaginaAtual(1); // Reseta para primeira página ao filtrar
   }, [searchTerm, filterStatus, cursos]);
+
+  // Cálculos para paginação
+  const indiceUltimoCurso = paginaAtual * cursosPorPagina;
+  const indicePrimeiroCurso = indiceUltimoCurso - cursosPorPagina;
+  const cursosPaginaAtual = filteredCursos.slice(indicePrimeiroCurso, indiceUltimoCurso);
+  const totalPaginas = Math.ceil(filteredCursos.length / cursosPorPagina);
+
+  const handleMudarPagina = (_event: React.ChangeEvent<unknown>, valor: number) => {
+    setPaginaAtual(valor);
+    // Rolar para o topo da tabela
+    window.scrollTo({ top: 400, behavior: 'smooth' });
+  };
 
   const handleViewCurso = (id: number) => {
     navigate(`/curso/${id}`);
@@ -221,11 +239,9 @@ const CursosAdminPage: React.FC = () => {
     }
   };
 
-  // Adicione estas funções para os callbacks:
   const handleCursoAtualizado = () => {
     buscarCursos(); // Recarrega a lista de cursos
     setSnackbar({
-      // Você precisa adicionar o estado de snackbar
       open: true,
       message: "Curso atualizado com sucesso!",
       severity: "success",
@@ -288,12 +304,9 @@ const CursosAdminPage: React.FC = () => {
       }
     }
   };
+
   const handleRefresh = () => {
-    setLoading(true);
-    // Recarregar dados da API
-    setTimeout(() => {
-      setLoading(false);
-    }, 1000);
+    buscarCursos();
   };
 
   return (
@@ -346,6 +359,7 @@ const CursosAdminPage: React.FC = () => {
             </Button>
           </Box>
         </Box>
+
         {/* Filtros */}
         <Paper sx={{ p: 3, mb: 4 }}>
           <Box
@@ -400,16 +414,34 @@ const CursosAdminPage: React.FC = () => {
               display: "flex",
               justifyContent: "space-between",
               alignItems: "center",
+              flexWrap: "wrap",
+              gap: 2,
             }}
           >
             <Typography variant="body2" color="text.secondary">
               {filteredCursos.length} cursos encontrados
+              {totalPaginas > 1 && ` (Página ${paginaAtual} de ${totalPaginas})`}
             </Typography>
             <Typography variant="body2" color="text.secondary">
               Última atualização: {new Date().toLocaleString("pt-BR")}
             </Typography>
           </Box>
         </Paper>
+
+        {/* Controle de Paginação Superior */}
+        {filteredCursos.length > cursosPorPagina && (
+          <Box sx={{ display: "flex", justifyContent: "center", mb: 2 }}>
+            <Pagination
+              count={totalPaginas}
+              page={paginaAtual}
+              onChange={handleMudarPagina}
+              color="primary"
+              size="medium"
+              showFirstButton
+              showLastButton
+            />
+          </Box>
+        )}
 
         {/* Lista de Cursos */}
         {loading ? (
@@ -427,197 +459,227 @@ const CursosAdminPage: React.FC = () => {
             </Typography>
           </Paper>
         ) : (
-          <TableContainer component={Paper}>
-            <Table>
-              <TableHead>
-                <TableRow sx={{ bgcolor: "primary.light" }}>
-                  <TableCell>Curso</TableCell>
-                  <TableCell>Código</TableCell>
-                  <TableCell>Nível</TableCell>
-                  <TableCell>Valor</TableCell>
-                  <TableCell>Duração</TableCell>
-                  <TableCell>Alunos</TableCell>
-                  <TableCell>Certificado</TableCell>
-                  <TableCell>Status</TableCell>
-                  <TableCell align="center">Ações</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {filteredCursos.map((curso) => (
-                  <TableRow key={curso.id} hover>
-                    <TableCell>
-                      <Box
-                        sx={{ display: "flex", alignItems: "center", gap: 2 }}
-                      >
+          <>
+            <TableContainer component={Paper}>
+              <Table>
+                <TableHead>
+                  <TableRow sx={{ bgcolor: "primary.light" }}>
+                    <TableCell>Curso</TableCell>
+                    <TableCell>Código</TableCell>
+                    <TableCell>Nível</TableCell>
+                    <TableCell>Valor</TableCell>
+                    <TableCell>Duração</TableCell>
+                    <TableCell>Alunos</TableCell>
+                    <TableCell>Certificado</TableCell>
+                    <TableCell>Status</TableCell>
+                    <TableCell align="center">Ações</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {cursosPaginaAtual.map((curso) => (
+                    <TableRow key={curso.id} hover>
+                      <TableCell>
                         <Box
-                          sx={{
-                            width: 60,
-                            height: 60,
-                            borderRadius: 1,
-                            overflow: "hidden",
-                            flexShrink: 0,
-                          }}
+                          sx={{ display: "flex", alignItems: "center", gap: 2 }}
                         >
                           <Box
-                            component="img"
-                            src={curso.fotoUrl}
-                            alt={curso.nome}
                             sx={{
-                              width: "100%",
-                              height: "100%",
-                              objectFit: "cover",
-                            }}
-                          />
-                        </Box>
-                        <Box>
-                          <Typography variant="subtitle2" fontWeight="bold">
-                            {curso.nome}
-                          </Typography>
-                          <Typography
-                            variant="caption"
-                            color="text.secondary"
-                            sx={{
-                              display: "-webkit-box",
-                              WebkitLineClamp: 1,
-                              WebkitBoxOrient: "vertical",
+                              width: 60,
+                              height: 60,
+                              borderRadius: 1,
                               overflow: "hidden",
+                              flexShrink: 0,
                             }}
                           >
-                            {curso.descricao}
-                          </Typography>
-                          <Box sx={{ display: "flex", gap: 1, mt: 0.5 }}>
-                            <Chip
-                              icon={<AccessTime fontSize="small" />}
-                              label={curso.duracaoHoras}
-                              size="small"
-                              variant="outlined"
+                            <Box
+                              component="img"
+                              src={curso.fotoUrl}
+                              alt={curso.nome}
+                              sx={{
+                                width: "100%",
+                                height: "100%",
+                                objectFit: "cover",
+                              }}
                             />
                           </Box>
+                          <Box>
+                            <Typography variant="subtitle2" fontWeight="bold">
+                              {curso.nome}
+                            </Typography>
+                            <Typography
+                              variant="caption"
+                              color="text.secondary"
+                              sx={{
+                                display: "-webkit-box",
+                                WebkitLineClamp: 1,
+                                WebkitBoxOrient: "vertical",
+                                overflow: "hidden",
+                              }}
+                            >
+                              {curso.descricao}
+                            </Typography>
+                            <Box sx={{ display: "flex", gap: 1, mt: 0.5 }}>
+                              <Chip
+                                icon={<AccessTime fontSize="small" />}
+                                label={curso.duracaoHoras}
+                                size="small"
+                                variant="outlined"
+                              />
+                            </Box>
+                          </Box>
                         </Box>
-                      </Box>
-                    </TableCell>
-                    <TableCell>
-                      <Chip
-                        label={curso.codigo}
-                        size="small"
-                        variant="outlined"
-                        color="primary"
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Stack spacing={1}>
+                      </TableCell>
+                      <TableCell>
                         <Chip
-                          label={curso.nivel}
+                          label={curso.codigo}
                           size="small"
-                          sx={{
-                            bgcolor:
-                              curso.nivel === "Iniciante"
-                                ? "#e3f2fd"
-                                : curso.nivel === "Intermediário"
-                                ? "#f3e5f5"
-                                : "#ffebee",
-                            color:
-                              curso.nivel === "Iniciante"
-                                ? "#1976d2"
-                                : curso.nivel === "Intermediário"
-                                ? "#7b1fa2"
-                                : "#d32f2f",
-                          }}
+                          variant="outlined"
+                          color="primary"
                         />
-                      </Stack>
-                    </TableCell>
-                    <TableCell>
-                      <Typography
-                        variant="body1"
-                        fontWeight="bold"
-                        color="primary"
-                      >
-                        R$ {curso.valor.toFixed(2)}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        à vista
-                      </Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Chip
-                        label={curso.duracaoHoras + "h"}
-                        size="small"
-                        variant="outlined"
-                        icon={<AccessTime fontSize="small" />}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Box
-                        sx={{ display: "flex", alignItems: "center", gap: 1 }}
-                      >
-                        <People fontSize="small" color="action" />
-                        <Typography variant="body1" fontWeight="medium">
-                          {curso.maxAlunos}
+                      </TableCell>
+                      <TableCell>
+                        <Stack spacing={1}>
+                          <Chip
+                            label={curso.nivel}
+                            size="small"
+                            sx={{
+                              bgcolor:
+                                curso.nivel === "Iniciante"
+                                  ? "#e3f2fd"
+                                  : curso.nivel === "Intermediário"
+                                  ? "#f3e5f5"
+                                  : "#ffebee",
+                              color:
+                                curso.nivel === "Iniciante"
+                                  ? "#1976d2"
+                                  : curso.nivel === "Intermediário"
+                                  ? "#7b1fa2"
+                                  : "#d32f2f",
+                            }}
+                          />
+                        </Stack>
+                      </TableCell>
+                      <TableCell>
+                        <Typography
+                          variant="body1"
+                          fontWeight="bold"
+                          color="primary"
+                        >
+                          R$ {curso.valor.toFixed(2)}
                         </Typography>
                         <Typography variant="caption" color="text.secondary">
-                          alunos
+                          à vista
                         </Typography>
-                      </Box>
-                    </TableCell>
+                      </TableCell>
+                      <TableCell>
+                        <Chip
+                          label={curso.duracaoHoras + "h"}
+                          size="small"
+                          variant="outlined"
+                          icon={<AccessTime fontSize="small" />}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Box
+                          sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                        >
+                          <People fontSize="small" color="action" />
+                          <Typography variant="body1" fontWeight="medium">
+                            {curso.maxAlunos}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            alunos
+                          </Typography>
+                        </Box>
+                      </TableCell>
 
-                    <TableCell>
-                      <Chip
-                        label={curso.certificadoDisponivel ? "Sim" : "Não"}
-                        size="small"
-                        color={
-                          curso.certificadoDisponivel ? "success" : "default"
-                        }
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Chip
-                        label={curso.ativo === true ? "Ativo" : "Inativo"}
-                        color={curso.ativo === true ? "success" : "default"}
-                        size="small"
-                        icon={curso.ativo ? <CheckCircle /> : <Block />}
-                        onClick={() => handleToggleStatus(curso)}
-                        sx={{ cursor: "pointer" }}
-                      />
-                    </TableCell>
-                    <TableCell align="center">
-                      <Box
-                        sx={{
-                          display: "flex",
-                          gap: 1,
-                          justifyContent: "center",
-                        }}
-                      >
-                        <IconButton
+                      <TableCell>
+                        <Chip
+                          label={curso.certificadoDisponivel ? "Sim" : "Não"}
                           size="small"
-                          color="primary"
-                          onClick={() => handleViewCurso(curso.id)}
-                          title="Visualizar"
-                        >
-                          <Visibility fontSize="small" />
-                        </IconButton>
-                        <IconButton
+                          color={
+                            curso.certificadoDisponivel ? "success" : "default"
+                          }
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Chip
+                          label={curso.ativo === true ? "Ativo" : "Inativo"}
+                          color={curso.ativo === true ? "success" : "default"}
                           size="small"
-                          color="info"
-                          onClick={() => handleEditCurso(curso)} // Agora passa o curso completo
-                          title="Editar"
+                          icon={curso.ativo ? <CheckCircle /> : <Block />}
+                          onClick={() => handleToggleStatus(curso)}
+                          sx={{ cursor: "pointer" }}
+                        />
+                      </TableCell>
+                      <TableCell align="center">
+                        <Box
+                          sx={{
+                            display: "flex",
+                            gap: 1,
+                            justifyContent: "center",
+                          }}
                         >
-                          <Edit fontSize="small" />
-                        </IconButton>
-                        <IconButton
-                          size="small"
-                          color="error"
-                          onClick={() => handleDeleteClick(curso)}
-                          title="Excluir"
-                        >
-                          <Delete fontSize="small" />
-                        </IconButton>
-                      </Box>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
+                          <IconButton
+                            size="small"
+                            color="primary"
+                            onClick={() => handleViewCurso(curso.id)}
+                            title="Visualizar"
+                          >
+                            <Visibility fontSize="small" />
+                          </IconButton>
+                          <IconButton
+                            size="small"
+                            color="info"
+                            onClick={() => handleEditCurso(curso)}
+                            title="Editar"
+                          >
+                            <Edit fontSize="small" />
+                          </IconButton>
+                          <IconButton
+                            size="small"
+                            color="error"
+                            onClick={() => handleDeleteClick(curso)}
+                            title="Excluir"
+                          >
+                            <Delete fontSize="small" />
+                          </IconButton>
+                        </Box>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+
+            {/* Paginação Inferior */}
+            {filteredCursos.length > cursosPorPagina && (
+              <Box sx={{ display: "flex", justifyContent: "center", mt: 3 }}>
+                <Pagination
+                  count={totalPaginas}
+                  page={paginaAtual}
+                  onChange={handleMudarPagina}
+                  color="primary"
+                  size="large"
+                  showFirstButton
+                  showLastButton
+                  siblingCount={1}
+                  boundaryCount={1}
+                />
+              </Box>
+            )}
+
+            {/* Informação da página */}
+            {filteredCursos.length > 0 && (
+              <Box sx={{ textAlign: "center", mt: 2, mb: 2 }}>
+                <Typography variant="body2" color="text.secondary">
+                  Mostrando {indicePrimeiroCurso + 1} a{" "}
+                  {Math.min(indiceUltimoCurso, filteredCursos.length)} de{" "}
+                  {filteredCursos.length} cursos
+                </Typography>
+              </Box>
+            )}
+          </>
         )}
 
         {/* Botão voltar */}
@@ -630,11 +692,14 @@ const CursosAdminPage: React.FC = () => {
           </Button>
         </Box>
       </Container>
+
+      {/* Modal para criar curso */}
       <CriarCursoModal
-      open={modalOpen}
-      onClose={() => setModalOpen(false)}
-      onCourseCreated={handleCursoCriado} // Adicione esta prop
-    />
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        onCourseCreated={handleCursoCriado}
+      />
+
       {/* Dialog de confirmação de exclusão */}
       <Dialog
         open={deleteDialogOpen}
@@ -670,6 +735,8 @@ const CursosAdminPage: React.FC = () => {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Modal para editar curso */}
       <EditarCursoModal
         open={modalEditarOpen}
         onClose={() => setModalEditarOpen(false)}
@@ -677,6 +744,7 @@ const CursosAdminPage: React.FC = () => {
         onCursoAtualizado={handleCursoAtualizado}
       />
 
+      {/* Snackbar para feedback */}
       <Snackbar
         open={snackbar.open}
         autoHideDuration={3000}

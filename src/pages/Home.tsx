@@ -536,7 +536,7 @@ const Home: React.FC = () => {
             </Typography>
 
             <div className="cursos-grid">
-              {cursos.map((curso, index) => (
+             {cursos.slice(0, 6).map((curso, index) => (
                 <motion.div
                   key={curso.id}
                   initial={{ opacity: 0, y: 20 }}
@@ -564,6 +564,7 @@ const Home: React.FC = () => {
                         variant="h5"
                         fontWeight="bold"
                         className="curso-titulo"
+                        style={{ marginBottom: -90 }}
                       >
                         {curso.nome}
                       </Typography>

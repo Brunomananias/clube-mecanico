@@ -17,6 +17,7 @@ import CursosAdminPage from './pages/administrador/CursoAdminPage';
 import { authService } from './services/authService'; // Importe o authService
 import PixPaymentPage from './pages/PixPaymentPage';
 import AlunoPerfil from './pages/components/AlunoPerfil';
+import TurmasAdminPage from './pages/administrador/TurmaAdminPage';
 // Componente para rotas protegidas
 // Componente para rotas protegidas - VERSÃO CORRIGIDA
 const PrivateRoute = ({ children, requiredRole }: { children: React.ReactNode, requiredRole?: 0 | 1 }) => {
@@ -192,6 +193,15 @@ function App() {
           element={
             <PrivateRoute requiredRole={1}>
               <CursosAdminPage />
+            </PrivateRoute>
+          } 
+        />
+
+        <Route 
+          path="/admin/turmas" 
+          element={
+            <PrivateRoute requiredRole={1}>
+              <TurmasAdminPage />
             </PrivateRoute>
           } 
         />

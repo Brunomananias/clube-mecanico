@@ -152,37 +152,38 @@ const CadastroPage: React.FC = () => {
   };
 
   const handleChange = (
-  e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement> | 
-  { target: { name?: string; value: unknown } }
-) => {
-  const { name, value } = 'target' in e ? e.target : e;
-  
-  if (name === 'cpf') {
-    const formattedCPF = formatarCPF(value as string);
-    setFormData(prev => ({ ...prev, cpf: formattedCPF }));
-  } else if (name === 'telefone') {
-    const formattedPhone = formatarTelefone(value as string);
-    setFormData(prev => ({ ...prev, telefone: formattedPhone }));
-  } else if (name === 'endereco.cep') {
-    const formattedCEP = formatarCEP(value as string);
-    setFormData(prev => ({
-      ...prev,
-      endereco: { ...prev.endereco, cep: formattedCEP }
-    }));
-    
-    if (formattedCEP.length === 9) {
-      buscarEnderecoPorCEP(formattedCEP);
+    e:
+      | React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+      | { target: { name?: string; value: unknown } }
+  ) => {
+    const { name, value } = "target" in e ? e.target : e;
+
+    if (name === "cpf") {
+      const formattedCPF = formatarCPF(value as string);
+      setFormData((prev) => ({ ...prev, cpf: formattedCPF }));
+    } else if (name === "telefone") {
+      const formattedPhone = formatarTelefone(value as string);
+      setFormData((prev) => ({ ...prev, telefone: formattedPhone }));
+    } else if (name === "endereco.cep") {
+      const formattedCEP = formatarCEP(value as string);
+      setFormData((prev) => ({
+        ...prev,
+        endereco: { ...prev.endereco, cep: formattedCEP },
+      }));
+
+      if (formattedCEP.length === 9) {
+        buscarEnderecoPorCEP(formattedCEP);
+      }
+    } else if (name?.startsWith("endereco.")) {
+      const field = name.split(".")[1];
+      setFormData((prev) => ({
+        ...prev,
+        endereco: { ...prev.endereco, [field]: value as string },
+      }));
+    } else {
+      setFormData((prev) => ({ ...prev, [name as string]: value }));
     }
-  } else if (name?.startsWith('endereco.')) {
-    const field = name.split('.')[1];
-    setFormData(prev => ({
-      ...prev,
-      endereco: { ...prev.endereco, [field]: value as string }
-    }));
-  } else {
-    setFormData(prev => ({ ...prev, [name as string]: value }));
-  }
-};
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -358,7 +359,7 @@ const CadastroPage: React.FC = () => {
                           <DatePicker
                             label="Data de Nascimento"
                             value={formData.data_Nascimento}
-                            onChange={(newValue: Dayjs | null) => {
+                            onChange={(newValue: any) => {
                               setFormData((prev) => ({
                                 ...prev,
                                 data_Nascimento: newValue,

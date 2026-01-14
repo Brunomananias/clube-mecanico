@@ -136,7 +136,14 @@ const Navbar: React.FC<NavbarProps> = ({ userType, userEmail }) => {
             path: "/carrinho",
             icon: <ShoppingCartIcon />,
           },
+          {
+          label: "Carrinho",
+          type: "page",
+          path: "/carrinho",
+          icon: <ShoppingCartIcon />,
+        },
         ]
+        
       : [
           // Para visitantes - links para seções da Home
           {
