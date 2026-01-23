@@ -19,7 +19,6 @@ import PixPaymentPage from './pages/PixPaymentPage';
 import AlunoPerfil from './pages/components/AlunoPerfil';
 import TurmasAdminPage from './pages/administrador/TurmaAdminPage';
 import PagamentosPage from './pages/administrador/PagamentosPage';
-import AlunosAdminPage from './pages/administrador/AlunosAdminPage';
 // Componente para rotas protegidas
 // Componente para rotas protegidas - VERSÃO CORRIGIDA
 const PrivateRoute = ({ children, requiredRole }: { children: React.ReactNode, requiredRole?: 0 | 1 }) => {

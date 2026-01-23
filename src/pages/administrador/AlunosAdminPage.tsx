@@ -131,6 +131,7 @@ const AlunosAdminPage: React.FC = () => {
   const buscarUsuarios = async () => {
     try {
       setLoading(true);
+      setFilterTipo("todos");
       const response = await api.get<IUsuario[]>("/usuarios");
       setUsuarios(response.data);
       setFilteredUsuarios(response.data.filter(u => u.tipo === 3));
