@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // src/pages/admin/PagamentosPage.tsx
 import React, { useState, useEffect } from "react";
@@ -30,6 +31,14 @@ import {
   Tooltip,
   Card,
   CardContent,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
+  Divider,
+  List,
+  ListItem,
+  ListItemText,
+  ListItemIcon,
 } from "@mui/material";
 import {
   Search,
@@ -45,6 +54,14 @@ import {
   Refresh,
   FilterList,
   AttachMoney,
+  ExpandMore,
+  School,
+  Schedule,
+  DateRange,
+  CalendarToday,
+  Group,
+  ReceiptLong,
+  Payments,
 } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
@@ -55,11 +72,12 @@ interface Pagamento {
   id: number;
   pedidoId: number;
   numeroPedido: string;
-  aluno: {
+  aluno?: {
     id: number;
-    nome: string;
+    nome_Completo: string;
     email: string;
   };
+  itens: ItemPedido[];
   metodoPagamento: string;
   valor: number;
   status: string;
@@ -72,6 +90,18 @@ interface Pagamento {
   parcelas: number;
   bandeira: string;
   ultimosDigitos: string;
+}
+
+interface ItemPedido {
+  id: number;
+  cursoId: number;
+  nomeCurso: string;
+  preco: number;
+  turmaId?: number;
+  dataInicio?: string;  
+  dataFim?: string;     
+  horario?: string;     
+  statusTurma?: string;
 }
 
 interface Estatisticas {
@@ -167,10 +197,13 @@ const PagamentosAdminPage: React.FC = () => {
       resultado = resultado.filter(
         (pagamento) =>
           (pagamento.numeroPedido || '').toLowerCase().includes(termo) ||
-          (pagamento.aluno?.nome || '').toLowerCase().includes(termo) ||
+          (pagamento.aluno?.nome_Completo || '').toLowerCase().includes(termo) ||
           (pagamento.aluno?.email || '').toLowerCase().includes(termo) ||
           (pagamento.codigoTransacao || '').toLowerCase().includes(termo) ||
-          (pagamento.mpPaymentId || '').toLowerCase().includes(termo)
+          (pagamento.mpPaymentId || '').toLowerCase().includes(termo) ||
+          (pagamento.itens || []).some(item => 
+            (item.nomeCurso || '').toLowerCase().includes(termo)
+          )
       );
     }
 
@@ -218,6 +251,26 @@ const PagamentosAdminPage: React.FC = () => {
     }
   };
 
+  const formatarDataCurta = (data: string | undefined | null): string => {
+    if (!data) return "N/A";
+    
+    try {
+      const dataObj = new Date(data);
+      
+      if (isNaN(dataObj.getTime())) {
+        return "Data inválida";
+      }
+      
+      const dia = dataObj.getDate().toString().padStart(2, '0');
+      const mes = (dataObj.getMonth() + 1).toString().padStart(2, '0');
+      const ano = dataObj.getFullYear();
+      
+      return `${dia}/${mes}/${ano}`;
+    } catch (error) {
+      return "Data inválida";
+    }
+  };
+
   const formatarValor = (valor: number | undefined): string => {
     if (valor === undefined || valor === null) {
       return "R$ 0,00";
@@ -260,6 +313,39 @@ const PagamentosAdminPage: React.FC = () => {
     
     const statusKey = (status || '').toLowerCase();
     return statusMap[statusKey] || status || "Desconhecido";
+  };
+
+  const getStatusTurmaColor = (status: string | undefined): "success" | "warning" | "info" | "error" | "default" => {
+    const statusStr = (status || '').toLowerCase();
+    
+    switch (statusStr) {
+      case 'ativa':
+      case 'andamento':
+        return 'success';
+      case 'pendente':
+        return 'warning';
+      case 'programada':
+        return 'info';
+      case 'cancelada':
+      case 'encerrada':
+        return 'error';
+      default:
+        return 'default';
+    }
+  };
+
+  const getStatusTurmaText = (status: string | undefined): string => {
+    const statusMap: Record<string, string> = {
+      'ativa': 'Ativa',
+      'pendente': 'Pendente',
+      'andamento': 'Em Andamento',
+      'programada': 'Programada',
+      'cancelada': 'Cancelada',
+      'encerrada': 'Encerrada',
+    };
+    
+    const statusKey = (status || '').toLowerCase();
+    return statusMap[statusKey] || status || "Não definido";
   };
 
   const getMetodoPagamentoIcon = (metodo: string | undefined) => {
@@ -315,23 +401,38 @@ const PagamentosAdminPage: React.FC = () => {
         'Transação',
         'Tipo',
         'Parcelas',
-        'Bandeira'
+        'Bandeira',
+        'Cursos',
+        'Valor Curso',
+        'Turma ID',
+        'Data Início Turma',
+        'Data Fim Turma'
       ];
 
-      const rows = (pagamentos || []).map(p => [
-        p.id || '',
-        p.numeroPedido || 'N/A',
-        p.aluno?.nome || 'N/A',
-        p.aluno?.email || 'N/A',
-        getMetodoPagamentoText(p.metodoPagamento),
-        (p.valor || 0).toFixed(2),
-        getStatusText(p.status),
-        formatarData(p.dataPagamento),
-        p.codigoTransacao || 'N/A',
-        p.tipoPagamento || 'N/A',
-        p.parcelas || '1',
-        p.bandeira || 'N/A'
-      ]);
+      const rows = (pagamentos || []).map(p => {
+        const cursos = (p.itens || []).map(i => i.nomeCurso).join('; ');
+        const primeiroItem = (p.itens || [])[0];
+        
+        return [
+          p.id || '',
+          p.numeroPedido || 'N/A',
+          p.aluno?.nome_Completo || 'N/A',
+          p.aluno?.email || 'N/A',
+          getMetodoPagamentoText(p.metodoPagamento),
+          (p.valor || 0).toFixed(2),
+          getStatusText(p.status),
+          formatarData(p.dataPagamento),
+          p.codigoTransacao || 'N/A',
+          p.tipoPagamento || 'N/A',
+          p.parcelas || '1',
+          p.bandeira || 'N/A',
+          cursos || 'N/A',
+          primeiroItem?.preco?.toFixed(2) || '0.00',
+          primeiroItem?.turmaId || 'N/A',
+          formatarDataCurta(primeiroItem?.dataInicio),
+          formatarDataCurta(primeiroItem?.dataFim)
+        ];
+      });
 
       const csvContent = [
         headers.join(','),
@@ -420,7 +521,7 @@ const PagamentosAdminPage: React.FC = () => {
           <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 4 }}>
             <Box>
               <Typography variant="h3" fontWeight="bold" color="primary" gutterBottom>
-                <AttachMoney sx={{ verticalAlign: "middle", mr: 2 }} />
+                <Payments sx={{ verticalAlign: "middle", mr: 2 }} />
                 Gerenciamento de Pagamentos
               </Typography>
               <Typography variant="h6" color="text.secondary">
@@ -430,7 +531,7 @@ const PagamentosAdminPage: React.FC = () => {
           </Box>
           
           <Paper sx={{ p: 4, textAlign: "center", mt: 4 }}>
-            <AttachMoney sx={{ fontSize: 60, color: "text.secondary", mb: 2 }} />
+            <Payments sx={{ fontSize: 60, color: "text.secondary", mb: 2 }} />
             <Typography variant="h6" color="text.secondary" gutterBottom>
               Nenhum pagamento encontrado no sistema
             </Typography>
@@ -457,7 +558,7 @@ const PagamentosAdminPage: React.FC = () => {
         <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 4 }}>
           <Box>
             <Typography variant="h3" fontWeight="bold" color="primary" gutterBottom>
-              <AttachMoney sx={{ verticalAlign: "middle", mr: 2 }} />
+              <Payments sx={{ verticalAlign: "middle", mr: 2 }} />
               Gerenciamento de Pagamentos
             </Typography>
             <Typography variant="h6" color="text.secondary">
@@ -474,7 +575,7 @@ const PagamentosAdminPage: React.FC = () => {
                 <CardContent>
                   <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
                     <Avatar sx={{ bgcolor: 'success.light', mr: 2 }}>
-                      <CheckCircle />
+                      <AttachMoney />
                     </Avatar>
                     <Box>
                       <Typography variant="h6" fontWeight="bold">
@@ -494,7 +595,7 @@ const PagamentosAdminPage: React.FC = () => {
                 <CardContent>
                   <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
                     <Avatar sx={{ bgcolor: 'success.main', mr: 2 }}>
-                      {estatisticas.totalAprovados}
+                      <CheckCircle />
                     </Avatar>
                     <Box>
                       <Typography variant="h6" fontWeight="bold">
@@ -514,7 +615,7 @@ const PagamentosAdminPage: React.FC = () => {
                 <CardContent>
                   <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
                     <Avatar sx={{ bgcolor: 'warning.main', mr: 2 }}>
-                      {estatisticas.totalPendentes}
+                      <PendingActions />
                     </Avatar>
                     <Box>
                       <Typography variant="h6" fontWeight="bold">
@@ -534,7 +635,7 @@ const PagamentosAdminPage: React.FC = () => {
                 <CardContent>
                   <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
                     <Avatar sx={{ bgcolor: 'error.main', mr: 2 }}>
-                      {estatisticas.totalCancelados}
+                      <Cancel />
                     </Avatar>
                     <Box>
                       <Typography variant="h6" fontWeight="bold">
@@ -558,7 +659,7 @@ const PagamentosAdminPage: React.FC = () => {
             <Box sx={{ flex: '1 1 300px' }}>
               <TextField
                 fullWidth
-                placeholder="Buscar por pedido, aluno, transação..."
+                placeholder="Buscar por pedido, aluno, transação, curso..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 InputProps={{
@@ -726,7 +827,7 @@ const PagamentosAdminPage: React.FC = () => {
           </Box>
         ) : (!filteredPagamentos || filteredPagamentos.length === 0) ? (
           <Paper sx={{ p: 4, textAlign: "center" }}>
-            <AttachMoney sx={{ fontSize: 60, color: "text.secondary", mb: 2 }} />
+            <Payments sx={{ fontSize: 60, color: "text.secondary", mb: 2 }} />
             <Typography variant="h6" color="text.secondary" gutterBottom>
               Nenhum pagamento encontrado
             </Typography>
@@ -746,6 +847,7 @@ const PagamentosAdminPage: React.FC = () => {
                     <TableCell>Método</TableCell>
                     <TableCell>Status</TableCell>
                     <TableCell>Data</TableCell>
+                    <TableCell>Cursos</TableCell>
                     <TableCell align="center">Ações</TableCell>
                   </TableRow>
                 </TableHead>
@@ -765,7 +867,7 @@ const PagamentosAdminPage: React.FC = () => {
                       <TableCell>
                         <Box>
                           <Typography variant="body2" fontWeight="medium">
-                            {pagamento.aluno?.nome || "N/A"}
+                            {pagamento.aluno?.nome_Completo || "N/A"}
                           </Typography>
                           <Typography variant="caption" color="text.secondary">
                             {pagamento.aluno?.email || ""}
@@ -813,6 +915,31 @@ const PagamentosAdminPage: React.FC = () => {
                         <Typography variant="body2">
                           {formatarData(pagamento.dataPagamento)}
                         </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Box>
+                          {(pagamento.itens || []).slice(0, 2).map((item, index) => (
+                            <Typography 
+                              key={item.id} 
+                              variant="caption" 
+                              display="block" 
+                              color="text.secondary"
+                              sx={{ 
+                                whiteSpace: 'nowrap', 
+                                overflow: 'hidden', 
+                                textOverflow: 'ellipsis',
+                                maxWidth: '150px'
+                              }}
+                            >
+                              • {item.nomeCurso || `Curso ${index + 1}`}
+                            </Typography>
+                          ))}
+                          {(pagamento.itens || []).length > 2 && (
+                            <Typography variant="caption" color="primary">
+                              +{(pagamento.itens || []).length - 2} mais
+                            </Typography>
+                          )}
+                        </Box>
                       </TableCell>
                       <TableCell align="center">
                         <Box sx={{ display: "flex", gap: 1, justifyContent: "center" }}>
@@ -923,7 +1050,7 @@ const PagamentosAdminPage: React.FC = () => {
                       </Typography>
                       <Box sx={{ pl: 1 }}>
                         <Typography variant="body2" gutterBottom>
-                          <strong>Nome:</strong> {pagamentoDetalhes.aluno?.nome || "N/A"}
+                          <strong>Nome:</strong> {pagamentoDetalhes.aluno?.nome_Completo || "N/A"}
                         </Typography>
                         <Typography variant="body2" gutterBottom>
                           <strong>Email:</strong> {pagamentoDetalhes.aluno?.email || "N/A"}
@@ -943,7 +1070,7 @@ const PagamentosAdminPage: React.FC = () => {
                       </Typography>
                       <Box sx={{ pl: 1 }}>
                         <Typography variant="body2" gutterBottom>
-                          <strong>Valor:</strong> {formatarValor(pagamentoDetalhes.valor)}
+                          <strong>Valor Total:</strong> {formatarValor(pagamentoDetalhes.valor)}
                         </Typography>
                         <Typography variant="body2" gutterBottom>
                           <strong>Status:</strong>{" "}
@@ -996,22 +1123,115 @@ const PagamentosAdminPage: React.FC = () => {
                     </Box>
                   </Box>
                 </Box>
+
+                {/* NOVA SEÇÃO: INFORMAÇÕES DOS CURSOS/TURMAS */}
+                <Box sx={{ mt: 3 }}>
+                  <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                    CURSOS E TURMAS
+                  </Typography>
+                  {(!pagamentoDetalhes.itens || pagamentoDetalhes.itens.length === 0) ? (
+                    <Typography variant="body2" color="text.secondary" sx={{ pl: 1 }}>
+                      Nenhum curso encontrado neste pedido.
+                    </Typography>
+                  ) : (
+                    <Accordion defaultExpanded sx={{ boxShadow: 'none', border: '1px solid #e0e0e0' }}>
+                      <AccordionSummary expandIcon={<ExpandMore />}>
+                        <Typography variant="body2">
+                          <strong>{pagamentoDetalhes.itens.length} curso(s) comprado(s)</strong>
+                        </Typography>
+                      </AccordionSummary>
+                      <AccordionDetails sx={{ pt: 0 }}>
+                        <List dense disablePadding>
+                          {pagamentoDetalhes.itens.map((item, index) => (
+                            <React.Fragment key={item.id}>
+                              <ListItem sx={{ px: 0, py: 1 }}>
+                                <ListItemIcon sx={{ minWidth: 36 }}>
+                                  <Avatar sx={{ width: 24, height: 24, bgcolor: 'primary.light' }}>
+                                    <School fontSize="small" />
+                                  </Avatar>
+                                </ListItemIcon>
+                                <ListItemText
+                                  primary={
+                                    <Typography variant="subtitle2">
+                                      {item.nomeCurso || `Curso ${index + 1}`}
+                                    </Typography>
+                                  }
+                                  secondary={
+                                    <Box sx={{ mt: 1 }}>
+                                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
+                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                          <AttachMoney fontSize="small" sx={{ fontSize: 14 }} />
+                                          <Typography variant="caption">
+                                            <strong>Valor:</strong> {formatarValor(item.preco)}
+                                          </Typography>
+                                        </Box>
+                                        
+                                        {item.turmaId && (
+                                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                            <Group fontSize="small" sx={{ fontSize: 14 }} />
+                                            <Typography variant="caption">
+                                              <strong>Turma ID:</strong> {item.turmaId}
+                                            </Typography>
+                                          </Box>
+                                        )}
+                                        
+                                        {item.statusTurma && (
+                                          <Chip
+                                            label={getStatusTurmaText(item.statusTurma)}
+                                            color={getStatusTurmaColor(item.statusTurma)}
+                                            size="small"
+                                            sx={{ height: 20 }}
+                                          />
+                                        )}
+                                      </Box>
+                                      
+                                      {(item.dataInicio || item.dataFim || item.horario) && (
+                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mt: 1, flexWrap: 'wrap' }}>
+                                          {item.dataInicio && (
+                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                              <CalendarToday fontSize="small" sx={{ fontSize: 12 }} />
+                                              <Typography variant="caption">
+                                                <strong>Início:</strong> {formatarDataCurta(item.dataInicio)}
+                                              </Typography>
+                                            </Box>
+                                          )}
+                                          
+                                          {item.dataFim && (
+                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                              <DateRange fontSize="small" sx={{ fontSize: 12 }} />
+                                              <Typography variant="caption">
+                                                <strong>Término:</strong> {formatarDataCurta(item.dataFim)}
+                                              </Typography>
+                                            </Box>
+                                          )}
+                                          
+                                          {item.horario && (
+                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                              <Schedule fontSize="small" sx={{ fontSize: 14 }} />
+                                              <Typography variant="caption">
+                                                <strong>Horário:</strong> {item.horario}
+                                              </Typography>
+                                            </Box>
+                                          )}
+                                        </Box>
+                                      )}
+                                    </Box>
+                                  }
+                                />
+                              </ListItem>
+                              {index < pagamentoDetalhes.itens.length - 1 && (
+                                <Divider component="li" />
+                              )}
+                            </React.Fragment>
+                          ))}
+                        </List>
+                      </AccordionDetails>
+                    </Accordion>
+                  )}
+                </Box>
               </DialogContent>
               <DialogActions>
                 <Button onClick={fecharModal}>Fechar</Button>
-                <Button
-                  variant="contained"
-                  onClick={() => {
-                    // Aqui você pode adicionar ação de reembolso ou outras ações
-                    Swal.fire({
-                      title: "Ação",
-                      text: "Funcionalidade em desenvolvimento",
-                      icon: "info",
-                    });
-                  }}
-                >
-                  Ações
-                </Button>
               </DialogActions>
             </>
           )}

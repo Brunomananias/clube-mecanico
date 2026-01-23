@@ -32,6 +32,7 @@ import DashboardIcon from "@mui/icons-material/Dashboard";
 import VerifiedIcon from "@mui/icons-material/Verified";
 import "./Home.css";
 import logo from "../assets/logo.png";
+import equipe from "../assets/backgroud.png";
 import { useNavigate } from "react-router-dom";
 import api from "../config/api";
 import Navbar from "./components/Navbar";
@@ -451,11 +452,11 @@ const Home: React.FC = () => {
                 viewport={{ once: true }}
               >
                 <Box
-                  component="img"
-                  src="https://images.unsplash.com/photo-1570870625148-2d2d9c9b49d3?auto=format&fit=crop&w=600&h=400&q=80"
-                  alt="Equipe do Clube do Mecânico"
-                  className="sobre-img"
-                />
+                    component="img"
+                    src={equipe}
+                    alt="equipe"
+                    sx={{ maxWidth: "100%", height: "auto" }}
+                  />
               </motion.div>
             </div>
             <div className="sobre-conteudo">
