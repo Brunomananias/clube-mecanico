@@ -4,7 +4,6 @@ import Home from "./pages/Home";
 import Login from "./pages/Login";
 import AlunoDashboard from "./pages/students/AlunoDashboard";
 import AdminDashboard from "./pages/administrador/AdminDashboard";
-import { useEffect, useState } from "react";
 import CursosPage from './pages/CursosPage';
 import CursoDetalhePage from './pages/CursoDetalhePage';
 import CarrinhoPage from './pages/CarrinhoPage';
@@ -19,48 +18,32 @@ import PixPaymentPage from './pages/PixPaymentPage';
 import AlunoPerfil from './pages/components/AlunoPerfil';
 import TurmasAdminPage from './pages/administrador/TurmaAdminPage';
 import PagamentosPage from './pages/administrador/PagamentosPage';
+import AlunosAdminPage from './pages/administrador/AlunosAdminPage';
 // Componente para rotas protegidas
 // Componente para rotas protegidas - VERSÃO CORRIGIDA
 const PrivateRoute = ({ children, requiredRole }: { children: React.ReactNode, requiredRole?: 0 | 1 }) => {
   const isAuthenticated = authService.isAuthenticated();
-  
-  console.log('PrivateRoute - isAuthenticated:', isAuthenticated);
-  console.log('PrivateRoute - requiredRole:', requiredRole);
-  
   if (!isAuthenticated) {
-    console.log('PrivateRoute: Não autenticado, redirecionando para login');
     return <Navigate to="/login" replace />;
   }
   
   if (requiredRole !== undefined) {
     const user = authService.getCurrentUser();
-    console.log('PrivateRoute - user:', user);
-    console.log('PrivateRoute - user.tipo:', user?.tipo);
-    
     if (!user) {
-      console.log('PrivateRoute: Usuário não encontrado');
       return <Navigate to="/login" replace />;
     }
     
     if (user.tipo !== requiredRole) {
-      console.log(`PrivateRoute: Tipo incorreto. Esperado: ${requiredRole}, Recebido: ${user.tipo}`);
-      
-      // Redireciona para dashboard apropriado
       if (user.tipo === 1) {
-        console.log('Redirecionando para admin/dashboard');
         return <Navigate to="/admin/dashboard" replace />;
       } else {
-        console.log('Redirecionando para aluno/dashboard');
         return <Navigate to="/aluno/dashboard" replace />;
       }
     }
   }
-  
-  console.log('PrivateRoute: Acesso permitido');
   return <>{children}</>;
 };
 
-// Uso nas rotas:
 <>
   // Uso nas rotas:
   <Route
@@ -78,7 +61,6 @@ const AuthRoute = ({ children }: { children: React.ReactNode }) => {
   const isAuthenticated = authService.isAuthenticated();
   
   if (!isAuthenticated) {
-    console.log('Rota protegida: usuário não autenticado');
     return <Navigate to="/login" replace />;
   }
   
@@ -86,32 +68,6 @@ const AuthRoute = ({ children }: { children: React.ReactNode }) => {
 };
 
 function App() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  
-  // Verificar estado de login quando o componente montar
-  useEffect(() => {
-    const checkLogin = () => {
-      const loggedIn = authService.isAuthenticated();
-      setIsLoggedIn(loggedIn);
-    };
-    
-    checkLogin();
-    
-    // Listener para mudanças no localStorage
-    window.addEventListener('storage', checkLogin);
-    
-    return () => {
-      window.removeEventListener('storage', checkLogin);
-    };
-  }, []);
-
-  // Função para verificar o estado atual (útil para debug)
-  useEffect(() => {
-    console.log('Estado de login:', isLoggedIn);
-    console.log('Token no localStorage:', localStorage.getItem('auth_token'));
-    console.log('Usuário no localStorage:', localStorage.getItem('user'));
-  }, [isLoggedIn]);
-
   return (
     <Router>
       <Routes>
@@ -198,14 +154,14 @@ function App() {
           } 
         />
 
-         {/* <Route 
+         <Route 
           path="/admin/alunos" 
           element={
             <PrivateRoute requiredRole={1}>
               <AlunosAdminPage />
             </PrivateRoute>
           } 
-        /> */}
+        />
 
          <Route 
           path="/admin/pagamentos" 

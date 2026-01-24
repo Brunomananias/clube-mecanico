@@ -38,7 +38,6 @@ import {
 } from "@mui/material";
 import {
   Search,
-  Edit,
   Delete,
   Visibility,
   Add,
@@ -49,7 +48,6 @@ import {
   CheckCircle,
   Block,
   Refresh,
-  School,
   LocationOn,
   AdminPanelSettings,
   PersonOutline,
@@ -70,7 +68,7 @@ dayjs.locale("pt-br");
 
 interface EnderecoResponse {
   id: number;
-  rua: string;
+  logradouro: string;
   numero: string;
   complemento?: string;
   bairro: string;
@@ -83,7 +81,7 @@ interface EnderecoResponse {
 interface IUsuario {
   id: number;
   email: string;
-  tipo: number; // 1=Admin, 2=Professor, 3=Aluno
+  tipo: number; // 0=Aluno, 1=Admin
   nomeCompleto: string;
   cpf?: string;
   telefone?: string;
@@ -94,16 +92,6 @@ interface IUsuario {
   enderecos: EnderecoResponse[];
   fotoUrl?: string;
   matricula?: string;
-  cursosMatriculados?: number;
-  cursosConcluidos?: number;
-}
-
-interface ICursoMatriculado {
-  id: number;
-  nome: string;
-  dataMatricula: string;
-  status: "matriculado" | "concluído" | "cancelado";
-  progresso: number;
 }
 
 const AlunosAdminPage: React.FC = () => {
@@ -118,11 +106,10 @@ const AlunosAdminPage: React.FC = () => {
     severity: "success" as "success" | "error" | "warning" | "info",
   });
   const [filterStatus, setFilterStatus] = useState<"todos" | "ativo" | "inativo">("todos");
-  const [filterTipo, setFilterTipo] = useState<"todos" | 1 | 2 | 3>(3);
+  const [filterTipo, setFilterTipo] = useState<"todos" | 0 | 1>("todos");
   const [filterOrder, setFilterOrder] = useState<"nome" | "dataCadastro" | "tipo">("nome");
   
   const [usuarioDetalhes, setUsuarioDetalhes] = useState<IUsuario | null>(null);
-  const [cursosMatriculados, setCursosMatriculados] = useState<ICursoMatriculado[]>([]);
   const [detalhesOpen, setDetalhesOpen] = useState(false);
 
   const [paginaAtual, setPaginaAtual] = useState(1);
@@ -131,10 +118,9 @@ const AlunosAdminPage: React.FC = () => {
   const buscarUsuarios = async () => {
     try {
       setLoading(true);
-      setFilterTipo("todos");
       const response = await api.get<IUsuario[]>("/usuarios");
       setUsuarios(response.data);
-      setFilteredUsuarios(response.data.filter(u => u.tipo === 3));
+      setFilteredUsuarios(response.data);
       setPaginaAtual(1);
     } catch (error) {
       console.error("Erro ao buscar usuários:", error);
@@ -145,15 +131,6 @@ const AlunosAdminPage: React.FC = () => {
       });
     } finally {
       setLoading(false);
-    }
-  };
-
-  const buscarCursosMatriculados = async (usuarioId: number) => {
-    try {
-      const response = await api.get<ICursoMatriculado[]>(`/usuarios/${usuarioId}/cursos`);
-      setCursosMatriculados(response.data);
-    } catch (error) {
-      console.error("Erro ao buscar cursos:", error);
     }
   };
 
@@ -213,60 +190,78 @@ const AlunosAdminPage: React.FC = () => {
 
   const handleViewUsuario = (usuario: IUsuario) => {
     setUsuarioDetalhes(usuario);
-    if (usuario.tipo === 3) {
-      buscarCursosMatriculados(usuario.id);
-    }
     setDetalhesOpen(true);
   };
 
-  const handleEditUsuario = (usuario: IUsuario) => {
-    navigate(`/admin/usuarios/editar/${usuario.id}`);
-  };
-
   const handleDeleteClick = async (usuario: IUsuario) => {
-    const result = await Swal.fire({
-      title: "Tem certeza?",
-      text: `Você está prestes a excluir o usuário "${usuario.nomeCompleto}". Esta ação não pode ser desfeita!`,
+  if (usuario.tipo === 1) {
+    Swal.fire({
+      title: "Operação não permitida",
+      text: "Não é possível excluir usuários administradores.",
       icon: "warning",
-      showCancelButton: true,
-      confirmButtonColor: "#d32f2f",
-      cancelButtonColor: "#757575",
-      confirmButtonText: "Sim, excluir!",
-      cancelButtonText: "Cancelar",
-      reverseButtons: true,
+      confirmButtonColor: "#1976d2",
     });
+    return;
+  }
 
-    if (result.isConfirmed) {
-      try {
-        await api.delete(`/usuarios/${usuario.id}`);
-        await Swal.fire({
-          title: "Excluído!",
-          text: `O usuário "${usuario.nomeCompleto}" foi excluído com sucesso.`,
-          icon: "success",
-          confirmButtonColor: "#1976d2",
-          timer: 2000,
-        });
+  const result = await Swal.fire({
+    title: "Tem certeza?",
+    text: `Você está prestes a excluir o usuário "${usuario.nomeCompleto}". Esta ação não pode ser desfeita!`,
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonColor: "#d32f2f",
+    cancelButtonColor: "#757575",
+    confirmButtonText: "Sim, excluir!",
+    cancelButtonText: "Cancelar",
+    reverseButtons: true,
+  });
 
-        buscarUsuarios();
-      } catch (error: any) {
-        console.error("Erro ao excluir usuário:", error);
-        
-        let errorMessage = "Erro ao excluir usuário";
-        if (error.response?.status === 400) {
-          errorMessage = "Não é possível excluir este usuário pois há registros associados";
-        } else if (error.response?.status === 403) {
-          errorMessage = "Você não tem permissão para excluir este usuário";
+  if (result.isConfirmed) {
+    try {
+      const token = localStorage.getItem('auth_token');
+      if (!token) {
+        throw new Error('Token não encontrado');
+      }
+      const response = await api.delete(`/usuarios/${usuario.id}`, {
+        headers: {
+          Authorization: `Bearer ${token}`
         }
-        
-        await Swal.fire({
-          title: "Erro!",
-          text: errorMessage,
-          icon: "error",
-          confirmButtonColor: "#d32f2f",
-        });
+      });
+      await Swal.fire({
+        title: "Excluído!",
+        text: `O usuário "${usuario.nomeCompleto}" foi excluído com sucesso.`,
+        icon: "success",
+        confirmButtonColor: "#1976d2",
+        timer: 2000,
+      });
+
+      buscarUsuarios();
+    } catch (error: any) {
+      let errorMessage = "Erro ao excluir usuário";
+      if (error.response?.status === 401) {
+        errorMessage = "Sessão expirada. Faça login novamente.";
+      } else if (error.response?.status === 403) {
+        errorMessage = "Você não tem permissão para excluir usuários.";
+      } else if (error.response?.status === 400) {
+        errorMessage = error.response?.data?.message || "Não é possível excluir este usuário pois há registros associados";
+      } else if (error.message === 'Token não encontrado') {
+        errorMessage = "Sessão expirada. Faça login novamente.";
+      }
+      
+      // Use Swal para mostrar o erro em vez de redirecionar automaticamente
+      await Swal.fire({
+        title: "Erro!",
+        text: errorMessage,
+        icon: "error",
+        confirmButtonColor: "#d32f2f",
+      });
+      if (error.response?.status === 401 || error.message === 'Token não encontrado') {
+        localStorage.removeItem('auth_token');
+        localStorage.removeItem('user');
       }
     }
-  };
+  }
+};
 
   const handleToggleStatus = async (usuario: IUsuario) => {
     const novoStatus = !usuario.ativo;
@@ -299,7 +294,6 @@ const AlunosAdminPage: React.FC = () => {
           severity: "success",
         });
       } catch (error) {
-        console.error("Erro ao alterar status:", error);
         setSnackbar({
           open: true,
           message: "Erro ao alterar status do usuário",
@@ -332,29 +326,21 @@ const AlunosAdminPage: React.FC = () => {
 
   const getTipoInfo = (tipo: number) => {
     switch (tipo) {
+      case 0:
+        return {
+          label: "Aluno",
+          icon: <PersonOutline fontSize="small" />,
+          color: "primary" as "primary" | "error" | "warning" | "success" | "info",
+          bgColor: "#e3f2fd",
+          textColor: "#1976d2"
+        };
       case 1:
         return {
           label: "Administrador",
           icon: <AdminPanelSettings fontSize="small" />,
-          color: "error" as "error" | "warning" | "primary" | "success" | "info",
+          color: "error" as const,
           bgColor: "#ffebee",
           textColor: "#d32f2f"
-        };
-      case 2:
-        return {
-          label: "Professor",
-          icon: <Person fontSize="small" />,
-          color: "warning" as const,
-          bgColor: "#fff3e0",
-          textColor: "#f57c00"
-        };
-      case 3:
-        return {
-          label: "Aluno",
-          icon: <PersonOutline fontSize="small" />,
-          color: "primary" as const,
-          bgColor: "#e3f2fd",
-          textColor: "#1976d2"
         };
       default:
         return {
@@ -371,8 +357,7 @@ const AlunosAdminPage: React.FC = () => {
     return enderecos.find(endereco => endereco.isPrincipal) || enderecos[0];
   };
 
-  const totalAlunos = usuarios.filter(u => u.tipo === 3).length;
-  const totalProfessores = usuarios.filter(u => u.tipo === 2).length;
+  const totalAlunos = usuarios.filter(u => u.tipo === 0).length;
   const totalAdmins = usuarios.filter(u => u.tipo === 1).length;
   const usuariosAtivos = usuarios.filter(u => u.ativo).length;
   const novosHoje = usuarios.filter(u => 
@@ -382,7 +367,6 @@ const AlunosAdminPage: React.FC = () => {
   return (
     <>
       <Navbar userType="admin" />
-
       <Container maxWidth="xl" sx={{ mt: 11, mb: 6 }}>
         {/* Cabeçalho */}
         <Box
@@ -451,25 +435,11 @@ const AlunosAdminPage: React.FC = () => {
               <Typography color="text.secondary" gutterBottom>
                 Alunos
               </Typography>
-              <Typography variant="h4" color="success.main">
+              <Typography variant="h4" color="primary">
                 {totalAlunos}
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                {usuarios.filter(u => u.tipo === 3 && u.ativo).length} ativos
-              </Typography>
-            </CardContent>
-          </Card>
-
-          <Card sx={{ flex: "1 1 200px", minWidth: 200 }}>
-            <CardContent>
-              <Typography color="text.secondary" gutterBottom>
-                Professores
-              </Typography>
-              <Typography variant="h4" color="warning.main">
-                {totalProfessores}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                {usuarios.filter(u => u.tipo === 2 && u.ativo).length} ativos
+                {usuarios.filter(u => u.tipo === 0 && u.ativo).length} ativos
               </Typography>
             </CardContent>
           </Card>
@@ -514,6 +484,18 @@ const AlunosAdminPage: React.FC = () => {
             />
 
             <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap" }}>
+              <FormControl size="small" sx={{ minWidth: 120 }}>
+                <InputLabel>Tipo</InputLabel>
+                <Select
+                  value={filterTipo.toString()}
+                  label="Tipo"
+                  onChange={(e: SelectChangeEvent) => setFilterTipo(e.target.value as any)}
+                >
+                  <MenuItem value="todos">Todos</MenuItem>
+                  <MenuItem value={0}>Alunos</MenuItem>
+                  <MenuItem value={1}>Administradores</MenuItem>
+                </Select>
+              </FormControl>
 
               <FormControl size="small" sx={{ minWidth: 120 }}>
                 <InputLabel>Status</InputLabel>
@@ -545,9 +527,29 @@ const AlunosAdminPage: React.FC = () => {
 
           <Box sx={{ display: "flex", gap: 1, mt: 2, flexWrap: "wrap" }}>
             <Chip
+              label="Todos"
+              onClick={() => setFilterTipo("todos")}
+              color={filterTipo === "todos" ? "primary" : "default"}
+              variant={filterTipo === "todos" ? "filled" : "outlined"}
+            />
+            <Chip
+              label="Alunos"
+              onClick={() => setFilterTipo(0)}
+              color={filterTipo === 0 ? "primary" : "default"}
+              variant={filterTipo === 0 ? "filled" : "outlined"}
+              icon={<PersonOutline />}
+            />
+            <Chip
+              label="Administradores"
+              onClick={() => setFilterTipo(1)}
+              color={filterTipo === 1 ? "error" : "default"}
+              variant={filterTipo === 1 ? "filled" : "outlined"}
+              icon={<AdminPanelSettings />}
+            />
+            <Chip
               label="Ativos"
               onClick={() => setFilterStatus("ativo")}
-              color={filterStatus === "ativo" ? "primary" : "default"}
+              color={filterStatus === "ativo" ? "success" : "default"}
               variant={filterStatus === "ativo" ? "filled" : "outlined"}
               icon={<CheckCircle />}
             />
@@ -649,15 +651,10 @@ const AlunosAdminPage: React.FC = () => {
                               <Typography variant="caption" color="text.secondary">
                                 {usuario.cpf || "Sem CPF"}
                               </Typography>
-                              {usuario.tipo === 3 && (
-                                <Box sx={{ display: "flex", gap: 1, mt: 0.5 }}>
-                                  <Chip
-                                    icon={<School fontSize="small" />}
-                                    label={`${usuario.cursosMatriculados || 0} cursos`}
-                                    size="small"
-                                    variant="outlined"
-                                  />
-                                </Box>
+                              {usuario.tipo === 0 && usuario.matricula && (
+                                <Typography variant="caption" color="text.secondary" display="block">
+                                  Matrícula: {usuario.matricula}
+                                </Typography>
                               )}
                             </Box>
                           </Box>
@@ -698,7 +695,7 @@ const AlunosAdminPage: React.FC = () => {
                                 {enderecoPrincipal.cidade}, {enderecoPrincipal.estado}
                               </Typography>
                               <Typography variant="caption" color="text.secondary">
-                                {enderecoPrincipal.rua}, {enderecoPrincipal.numero}
+                                {enderecoPrincipal.logradouro}, {enderecoPrincipal.numero}
                               </Typography>
                               {enderecoPrincipal.isPrincipal && (
                                 <Chip
@@ -763,16 +760,7 @@ const AlunosAdminPage: React.FC = () => {
                                 <Visibility fontSize="small" />
                               </IconButton>
                             </Tooltip>
-                            <Tooltip title="Editar">
-                              <IconButton
-                                size="small"
-                                color="info"
-                                onClick={() => handleEditUsuario(usuario)}
-                              >
-                                <Edit fontSize="small" />
-                              </IconButton>
-                            </Tooltip>
-                            {usuario.tipo !== 1 && (
+                            {usuario.tipo === 0 && (
                               <Tooltip title="Excluir">
                                 <IconButton
                                   size="small"
@@ -906,6 +894,16 @@ const AlunosAdminPage: React.FC = () => {
                         </Typography>
                       </Box>
                     )}
+                    {usuarioDetalhes.tipo === 0 && usuarioDetalhes.matricula && (
+                      <Box>
+                        <Typography variant="body2" color="text.secondary">
+                          Matrícula
+                        </Typography>
+                        <Typography variant="body1">
+                          {usuarioDetalhes.matricula}
+                        </Typography>
+                      </Box>
+                    )}
                   </Stack>
                 </Box>
 
@@ -984,7 +982,7 @@ const AlunosAdminPage: React.FC = () => {
                               Endereço {index + 1}
                             </Typography>
                             <Typography variant="body2">
-                              {endereco.rua}, {endereco.numero}
+                              {endereco.logradouro}, {endereco.numero}
                               {endereco.complemento && `, ${endereco.complemento}`}
                             </Typography>
                             <Typography variant="body2">
@@ -1002,89 +1000,10 @@ const AlunosAdminPage: React.FC = () => {
                     </Box>
                   </Box>
                 )}
-
-                {/* Cursos Matriculados */}
-                {usuarioDetalhes.tipo === 3 && (
-                  <Box sx={{ width: '100%' }}>
-                    <Typography variant="h6" gutterBottom color="primary">
-                      Cursos Matriculados
-                    </Typography>
-                    {cursosMatriculados.length === 0 ? (
-                      <Alert severity="info">
-                        Este aluno não está matriculado em nenhum curso.
-                      </Alert>
-                    ) : (
-                      <TableContainer component={Paper} variant="outlined">
-                        <Table size="small">
-                          <TableHead>
-                            <TableRow>
-                              <TableCell>Curso</TableCell>
-                              <TableCell>Data da Matrícula</TableCell>
-                              <TableCell>Status</TableCell>
-                              <TableCell>Progresso</TableCell>
-                            </TableRow>
-                          </TableHead>
-                          <TableBody>
-                            {cursosMatriculados.map((curso) => (
-                              <TableRow key={curso.id}>
-                                <TableCell>{curso.nome}</TableCell>
-                                <TableCell>{formatDate(curso.dataMatricula)}</TableCell>
-                                <TableCell>
-                                  <Chip
-                                    label={curso.status}
-                                    size="small"
-                                    color={
-                                      curso.status === "concluído" ? "success" :
-                                      curso.status === "cancelado" ? "error" : "primary"
-                                    }
-                                  />
-                                </TableCell>
-                                <TableCell>
-                                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                    <Box sx={{ flex: 1 }}>
-                                      <Box 
-                                        sx={{
-                                          height: 8,
-                                          bgcolor: 'grey.200',
-                                          borderRadius: 4,
-                                          overflow: 'hidden'
-                                        }}
-                                      >
-                                        <Box
-                                          sx={{
-                                            width: `${curso.progresso}%`,
-                                            height: '100%',
-                                            bgcolor: 'primary.main'
-                                          }}
-                                        />
-                                      </Box>
-                                    </Box>
-                                    <Typography variant="body2">
-                                      {curso.progresso}%
-                                    </Typography>
-                                  </Box>
-                                </TableCell>
-                              </TableRow>
-                            ))}
-                          </TableBody>
-                        </Table>
-                      </TableContainer>
-                    )}
-                  </Box>
-                )}
               </Box>
             </DialogContent>
             <DialogActions>
               <Button onClick={() => setDetalhesOpen(false)}>Fechar</Button>
-              <Button
-                variant="contained"
-                onClick={() => {
-                  setDetalhesOpen(false);
-                  handleEditUsuario(usuarioDetalhes);
-                }}
-              >
-                Editar Usuário
-              </Button>
             </DialogActions>
           </>
         )}
