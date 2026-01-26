@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useEffect, useState } from 'react';
 import {
@@ -135,6 +136,15 @@ interface IConteudoComplementar {
   cursoNome?: string;
 }
 
+interface ICertificado {
+  id: number;
+  dataConclusao: string;
+  cargaHoraria: number;
+  urlCertificado: string;
+  dataEmissao: string;
+  cursoAlunoId: number;
+}
+
 const AlunoDashboard: React.FC = () => {
   const navigate = useNavigate();
   const [tabValue, setTabValue] = React.useState(0);
@@ -145,7 +155,8 @@ const AlunoDashboard: React.FC = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [conteudosCursoSelecionado, setConteudosCursoSelecionado] = useState<IConteudoComplementar[]>([]);
   const [cursoSelecionado, setCursoSelecionado] = useState<string>('');
-  
+  const [certificados, setCertificados] = useState<ICertificado[]>([]);
+
   const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
   const userType = localStorage.getItem("userType") || "";
   const userEmail = localStorage.getItem("userEmail") || "";
@@ -289,6 +300,50 @@ const AlunoDashboard: React.FC = () => {
     }
   };
 
+  const listarCertificados = async (idAluno: number) => {
+  try {
+    // Buscar todas as matrículas do aluno primeiro
+    const responseCursos = await api.get(`/cursos/buscarCursosAlunos`, {
+      params: { idAluno: idAluno }
+    });
+    
+    if (Array.isArray(responseCursos.data)) {
+      // Para cada matrícula, buscar certificados se existirem
+      const certificadosPromises = responseCursos.data.map(async (matricula: any) => {
+        try {
+          const responseCertificado = await api.get(`/Cursos/certificado`, {
+            params: { cursoAlunoId: matricula.id }
+          });
+          
+          if (responseCertificado.data.success && 
+              responseCertificado.data.dados && 
+              responseCertificado.data.dados.length > 0) {
+            // Retornar certificados com informações do curso
+            return responseCertificado.data.dados.map((cert: any) => ({
+              ...cert,
+              cursoNome: matricula.curso.nome,
+              cursoId: matricula.curso.id,
+              matriculaId: matricula.id
+            }));
+          }
+          return [];
+        } catch (error) {
+          console.log(`Nenhum certificado para matrícula ${matricula.id}`);
+          return [];
+        }
+      });
+      
+      const resultados = await Promise.all(certificadosPromises);
+      // Juntar todos os certificados em um único array
+      const todosCertificados = resultados.flat();
+      setCertificados(todosCertificados);
+    }
+  } catch (error: any) {
+    console.error('Erro ao buscar certificados:', error);
+    setError(error.response?.data?.message || 'Erro ao carregar certificados');
+  }
+};
+
   useEffect(() => {
     const usuarioString = localStorage.getItem("user");
     
@@ -301,6 +356,7 @@ const AlunoDashboard: React.FC = () => {
           console.log('ID do usuário para buscar cursos:', idUsuario);
           listarDadosUsuario(idUsuario);
           listarCursos(idUsuario);
+          listarCertificados(idUsuario);
         } else {
           setError("ID do usuário não encontrado");
           setLoading(false);
@@ -1136,110 +1192,189 @@ const AlunoDashboard: React.FC = () => {
             )}
 
             {/* Tab 5: Certificados */}
-            {tabValue === 4 && (
-              <Box>
-                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3, mb: 3 }}>
-                  {matriculas
-                    .filter(matricula => matricula.status.toLowerCase() === 'concluído' || matricula.progresso === 100)
-                    .map((matricula) => (
-                      <Paper key={matricula.id} sx={{ 
-                        flex: '1 1 300px',
-                        minWidth: 300,
-                        maxWidth: 'calc(50% - 12px)',
-                        p: 3,
-                        display: 'flex',
-                        flexDirection: 'column',
-                        borderLeft: '4px solid',
-                        borderLeftColor: 'success.main'
-                      }}>
-                        <Box sx={{ 
-                          display: 'flex', 
-                          justifyContent: 'space-between',
-                          alignItems: 'flex-start',
-                          mb: 2
-                        }}>
-                          <Box>
-                            <Typography variant="h6" color="primary" gutterBottom>
-                              <CardMembership sx={{ verticalAlign: 'middle', mr: 1 }} />
-                              {matricula.curso.nome}
-                            </Typography>
-                            
-                            <Stack spacing={0.5}>
-                              <Typography variant="body2" color="text.secondary">
-                                <strong>Código:</strong> CERT-{matricula.id.toString().padStart(6, '0')}
-                              </Typography>
-                              <Typography variant="body2" color="text.secondary">
-                                <strong>Emitido em:</strong> {formatarDataSimples(new Date().toISOString())}
-                              </Typography>
-                              <Typography variant="body2" color="text.secondary">
-                                <strong>Carga horária:</strong> {matricula.curso.duracaoHoras || "N/A"} horas
-                              </Typography>
-                              <Typography variant="body2" color="text.secondary">
-                                <strong>Progresso:</strong> {matricula.progresso}%
-                              </Typography>
-                            </Stack>
-                          </Box>
-                          
-                          <Chip 
-                            label="Concluído"
-                            color="success"
-                            size="small"
-                            icon={<CheckCircle />}
-                          />
-                        </Box>
-                        
-                        <Divider sx={{ my: 2 }} />
-                        
-                        <Box sx={{ 
-                          display: 'flex', 
-                          gap: 1, 
-                          justifyContent: 'flex-end',
-                          mt: 'auto'
-                        }}>
-                          <Tooltip title="Visualizar Certificado">
-                            <IconButton color="primary">
-                              <Visibility />
-                            </IconButton>
-                          </Tooltip>
-                          
-                          <Tooltip title="Compartilhar">
-                            <IconButton color="primary">
-                              <CardMembership />
-                            </IconButton>
-                          </Tooltip>
-                        </Box>
-                      </Paper>
-                    ))}
+{tabValue === 4 && (
+  <Box>
+    <Typography variant="h6" gutterBottom sx={{ mb: 3 }}>
+      <CardMembership sx={{ verticalAlign: 'middle', mr: 1 }} />
+      Meus Certificados
+    </Typography>
+    
+    {certificados.length === 0 ? (
+      <Paper sx={{ p: 4, textAlign: 'center' }}>
+        <CardMembership sx={{ fontSize: 60, color: 'text.secondary', mb: 2 }} />
+        <Typography variant="h6" gutterBottom>
+          Nenhum certificado emitido
+        </Typography>
+        <Typography variant="body2" color="text.secondary" paragraph>
+          Complete seus cursos para obter certificados. Certificados são emitidos automaticamente após a conclusão.
+        </Typography>
+        <Button
+          variant="contained"
+          onClick={() => setTabValue(2)}
+          sx={{ mt: 2 }}
+        >
+          Ver Meus Cursos
+        </Button>
+      </Paper>
+    ) : (
+      <>
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3, mb: 3 }}>
+          {certificados.map((certificado) => {
+            return (
+              <Paper key={certificado.id} sx={{ 
+                flex: '1 1 350px',
+                minWidth: 300,
+                maxWidth: 'calc(50% - 12px)',
+                p: 3,
+                display: 'flex',
+                flexDirection: 'column',
+                borderLeft: '4px solid',
+                borderLeftColor: 'success.main',
+                transition: 'transform 0.2s',
+                '&:hover': {
+                  transform: 'translateY(-4px)',
+                  boxShadow: 6
+                }
+              }}>
+                <Box sx={{ 
+                  display: 'flex', 
+                  justifyContent: 'space-between',
+                  alignItems: 'flex-start',
+                  mb: 2
+                }}>
+                  <Box sx={{ flex: 1 }}>
+                    <Typography variant="h6" color="primary" gutterBottom>
+                      <CardMembership sx={{ verticalAlign: 'middle', mr: 1 }} />
+                    </Typography>
+                    
+                    <Stack spacing={1} sx={{ mb: 2 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Typography variant="body2" color="text.secondary" sx={{ minWidth: 120 }}>
+                          <strong>ID Certificado:</strong>
+                        </Typography>
+                        <Chip 
+                          label={`CERT-${certificado.id.toString().padStart(6, '0')}`}
+                          size="small"
+                          variant="outlined"
+                        />
+                      </Box>
+                      
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Typography variant="body2" color="text.secondary" sx={{ minWidth: 120 }}>
+                          <strong>Concluído em:</strong>
+                        </Typography>
+                        <Typography variant="body2">
+                          {formatarDataSimples(certificado.dataConclusao)}
+                        </Typography>
+                      </Box>
+                      
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Typography variant="body2" color="text.secondary" sx={{ minWidth: 120 }}>
+                          <strong>Emitido em:</strong>
+                        </Typography>
+                        <Typography variant="body2">
+                          {formatarDataSimples(certificado.dataEmissao)}
+                        </Typography>
+                      </Box>
+                    </Stack>
+                  </Box>
+                  
+                  <Chip 
+                    label="Certificado"
+                    color="success"
+                    size="small"
+                    icon={<CheckCircle />}
+                    sx={{ ml: 1 }}
+                  />
                 </Box>
                 
-                {matriculas.filter(m => m.status.toLowerCase() === 'concluído' || m.progresso === 100).length === 0 && (
-                  <Paper sx={{ p: 4, textAlign: 'center' }}>
-                    <CardMembership sx={{ fontSize: 60, color: 'text.secondary', mb: 2 }} />
-                    <Typography variant="h6" gutterBottom>
-                      Nenhum certificado disponível
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary" paragraph>
-                      Complete seus cursos para obter certificados. Certificados serão emitidos automaticamente ao concluir um curso.
-                    </Typography>
-                  </Paper>
-                )}
+                <Divider sx={{ my: 2 }} />
                 
-                <Paper sx={{ 
-                  p: 3, 
-                  bgcolor: 'info.light', 
-                  textAlign: 'center',
-                  border: '1px solid',
-                  borderColor: 'info.main'
+                <Box sx={{ 
+                  display: 'flex', 
+                  gap: 1, 
+                  justifyContent: 'flex-end',
+                  alignItems: 'center'
                 }}>
-                  <Typography variant="body1" gutterBottom sx={{ color: 'info.contrastText' }}>
-                    <strong>Total de certificados:</strong> {matriculas.filter(m => m.status.toLowerCase() === 'concluído' || m.progresso === 100).length}
-                  </Typography>
-                  <Typography variant="body2" sx={{ color: 'info.contrastText', opacity: 0.9 }}>
-                    Você pode compartilhar seus certificados nas redes sociais ou incluí-los em seu currículo
-                  </Typography>
-                </Paper>
-              </Box>
-            )}
+                  {certificado.urlCertificado && certificado.urlCertificado !== "teste" ? (
+                    <>
+                      <Tooltip title="Visualizar Certificado">
+                        <Button
+                          variant="outlined"
+                          size="small"
+                          startIcon={<Visibility />}
+                          onClick={() => window.open(certificado.urlCertificado, '_blank')}
+                        >
+                          Visualizar
+                        </Button>
+                      </Tooltip>
+                    </>
+                  ) : (
+                    <Alert severity="info" sx={{ width: '100%' }}>
+                      Certificado em processamento. Em breve estará disponível para download.
+                    </Alert>
+                  )}
+                </Box>
+              </Paper>
+            );
+          })}
+        </Box>
+        
+        {/* Resumo de certificados */}
+        <Paper sx={{ 
+          p: 3, 
+          bgcolor: 'success.light', 
+          textAlign: 'center',
+          border: '1px solid',
+          borderColor: 'success.main'
+        }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap' }}>
+            <Box>
+              <Typography variant="h6" gutterBottom sx={{ color: 'success.contrastText' }}>
+                <CardMembership sx={{ verticalAlign: 'middle', mr: 1 }} />
+                Resumo de Certificados
+              </Typography>
+              <Typography variant="body2" sx={{ color: 'success.contrastText', opacity: 0.9 }}>
+                Total de cursos concluídos: {certificados.length}
+              </Typography>
+            </Box>
+            
+            <Box sx={{ display: 'flex', gap: 2, mt: { xs: 2, sm: 0 } }}>
+              <Chip 
+                label={`${certificados.length} Certificados`}
+                color="success"
+                variant="outlined"
+                sx={{ 
+                  borderColor: 'white',
+                  color: 'white',
+                  fontWeight: 'bold'
+                }}
+              />
+              
+              <Chip 
+                label={`${matriculas.length} Cursos`}
+                color="primary"
+                variant="outlined"
+                sx={{ 
+                  borderColor: 'white',
+                  color: 'white',
+                  fontWeight: 'bold'
+                }}
+              />
+            </Box>
+          </Box>
+          
+          <Typography variant="body2" sx={{ color: 'success.contrastText', opacity: 0.9, mt: 2 }}>
+            {certificados.length === 0 
+              ? "Complete seus cursos para obter certificados"
+              : "Você pode compartilhar seus certificados nas redes sociais ou incluí-los em seu currículo"
+            }
+          </Typography>
+        </Paper>
+      </>
+    )}
+  </Box>
+)}
           </Box>
         </Box>
       </Box>

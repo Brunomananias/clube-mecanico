@@ -35,6 +35,7 @@ import {
   Card,
   CardContent,
   Tooltip,
+  FormHelperText,
 } from "@mui/material";
 import {
   Search,
@@ -53,6 +54,8 @@ import {
   PersonOutline,
   Warning,
   Home,
+  CardMembership,
+  School,
 } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
@@ -94,6 +97,23 @@ interface IUsuario {
   matricula?: string;
 }
 
+interface ICertificadoForm {
+  dataConclusao: string;
+  cargaHoraria: number;
+  urlCertificado: string;
+  dataEmissao: string;
+  cursoAlunoId: number;
+}
+
+interface IMatriculaAluno {
+  id: number;
+  cursoId: number;
+  cursoNome: string;
+  dataMatricula: string;
+  status: string;
+  progresso: number;
+}
+
 const AlunosAdminPage: React.FC = () => {
   const navigate = useNavigate();
   const [usuarios, setUsuarios] = useState<IUsuario[]>([]);
@@ -105,12 +125,30 @@ const AlunosAdminPage: React.FC = () => {
     message: "",
     severity: "success" as "success" | "error" | "warning" | "info",
   });
-  const [filterStatus, setFilterStatus] = useState<"todos" | "ativo" | "inativo">("todos");
+  const [filterStatus, setFilterStatus] = useState<
+    "todos" | "ativo" | "inativo"
+  >("todos");
   const [filterTipo, setFilterTipo] = useState<"todos" | 0 | 1>("todos");
-  const [filterOrder, setFilterOrder] = useState<"nome" | "dataCadastro" | "tipo">("nome");
-  
+  const [filterOrder, setFilterOrder] = useState<
+    "nome" | "dataCadastro" | "tipo"
+  >("nome");
+
   const [usuarioDetalhes, setUsuarioDetalhes] = useState<IUsuario | null>(null);
   const [detalhesOpen, setDetalhesOpen] = useState(false);
+
+  const [certificadoOpen, setCertificadoOpen] = useState(false);
+  const [certificadoForm, setCertificadoForm] = useState<ICertificadoForm>({
+    dataConclusao: new Date().toISOString().split("T")[0],
+    cargaHoraria: 0,
+    urlCertificado: "",
+    dataEmissao: new Date().toISOString().split("T")[0],
+    cursoAlunoId: 0,
+  });
+  const [matriculasAluno, setMatriculasAluno] = useState<IMatriculaAluno[]>([]);
+  const [alunoSelecionado, setAlunoSelecionado] = useState<IUsuario | null>(
+    null,
+  );
+  const [loadingMatriculas, setLoadingMatriculas] = useState(false);
 
   const [paginaAtual, setPaginaAtual] = useState(1);
   const [usuariosPorPagina] = useState(10);
@@ -148,16 +186,19 @@ const AlunosAdminPage: React.FC = () => {
     if (searchTerm) {
       resultado = resultado.filter(
         (usuario) =>
-          usuario.nomeCompleto.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          usuario.nomeCompleto
+            .toLowerCase()
+            .includes(searchTerm.toLowerCase()) ||
           usuario.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
           (usuario.cpf && usuario.cpf.includes(searchTerm)) ||
-          (usuario.matricula && usuario.matricula.toLowerCase().includes(searchTerm.toLowerCase()))
+          (usuario.matricula &&
+            usuario.matricula.toLowerCase().includes(searchTerm.toLowerCase())),
       );
     }
 
     if (filterStatus !== "todos") {
-      resultado = resultado.filter((usuario) => 
-        filterStatus === "ativo" ? usuario.ativo : !usuario.ativo
+      resultado = resultado.filter((usuario) =>
+        filterStatus === "ativo" ? usuario.ativo : !usuario.ativo,
       );
     }
 
@@ -166,7 +207,10 @@ const AlunosAdminPage: React.FC = () => {
         case "nome":
           return a.nomeCompleto.localeCompare(b.nomeCompleto);
         case "dataCadastro":
-          return new Date(b.dataCadastro).getTime() - new Date(a.dataCadastro).getTime();
+          return (
+            new Date(b.dataCadastro).getTime() -
+            new Date(a.dataCadastro).getTime()
+          );
         case "tipo":
           return a.tipo - b.tipo;
         default:
@@ -180,12 +224,18 @@ const AlunosAdminPage: React.FC = () => {
 
   const indiceUltimoUsuario = paginaAtual * usuariosPorPagina;
   const indicePrimeiroUsuario = indiceUltimoUsuario - usuariosPorPagina;
-  const usuariosPaginaAtual = filteredUsuarios.slice(indicePrimeiroUsuario, indiceUltimoUsuario);
+  const usuariosPaginaAtual = filteredUsuarios.slice(
+    indicePrimeiroUsuario,
+    indiceUltimoUsuario,
+  );
   const totalPaginas = Math.ceil(filteredUsuarios.length / usuariosPorPagina);
 
-  const handleMudarPagina = (_event: React.ChangeEvent<unknown>, valor: number) => {
+  const handleMudarPagina = (
+    _event: React.ChangeEvent<unknown>,
+    valor: number,
+  ) => {
     setPaginaAtual(valor);
-    window.scrollTo({ top: 400, behavior: 'smooth' });
+    window.scrollTo({ top: 400, behavior: "smooth" });
   };
 
   const handleViewUsuario = (usuario: IUsuario) => {
@@ -193,75 +243,205 @@ const AlunosAdminPage: React.FC = () => {
     setDetalhesOpen(true);
   };
 
-  const handleDeleteClick = async (usuario: IUsuario) => {
-  if (usuario.tipo === 1) {
-    Swal.fire({
-      title: "Operação não permitida",
-      text: "Não é possível excluir usuários administradores.",
-      icon: "warning",
-      confirmButtonColor: "#1976d2",
-    });
-    return;
-  }
-
-  const result = await Swal.fire({
-    title: "Tem certeza?",
-    text: `Você está prestes a excluir o usuário "${usuario.nomeCompleto}". Esta ação não pode ser desfeita!`,
-    icon: "warning",
-    showCancelButton: true,
-    confirmButtonColor: "#d32f2f",
-    cancelButtonColor: "#757575",
-    confirmButtonText: "Sim, excluir!",
-    cancelButtonText: "Cancelar",
-    reverseButtons: true,
-  });
-
-  if (result.isConfirmed) {
+  const buscarMatriculasAluno = async (alunoId: number) => {
     try {
-      const token = localStorage.getItem('auth_token');
-      if (!token) {
-        throw new Error('Token não encontrado');
-      }
-      const response = await api.delete(`/usuarios/${usuario.id}`, {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      });
-      await Swal.fire({
-        title: "Excluído!",
-        text: `O usuário "${usuario.nomeCompleto}" foi excluído com sucesso.`,
-        icon: "success",
-        confirmButtonColor: "#1976d2",
-        timer: 2000,
+      setLoadingMatriculas(true);
+      const response = await api.get(`/cursos/buscarCursosAlunos`, {
+        params: { idAluno: alunoId },
       });
 
-      buscarUsuarios();
-    } catch (error: any) {
-      let errorMessage = "Erro ao excluir usuário";
-      if (error.response?.status === 401) {
-        errorMessage = "Sessão expirada. Faça login novamente.";
-      } else if (error.response?.status === 403) {
-        errorMessage = "Você não tem permissão para excluir usuários.";
-      } else if (error.response?.status === 400) {
-        errorMessage = error.response?.data?.message || "Não é possível excluir este usuário pois há registros associados";
-      } else if (error.message === 'Token não encontrado') {
-        errorMessage = "Sessão expirada. Faça login novamente.";
+      if (Array.isArray(response.data)) {
+        const matriculasFormatadas = response.data.map((matricula: any) => ({
+          id: matricula.id,
+          cursoId: matricula.cursoId,
+          cursoNome: matricula.curso?.nome || "Curso sem nome",
+          dataMatricula: matricula.dataMatricula,
+          status: matricula.status || "ativo",
+          progresso: matricula.progresso || 0,
+        }));
+        setMatriculasAluno(matriculasFormatadas);
+      } else {
+        setMatriculasAluno([]);
       }
-      
-      // Use Swal para mostrar o erro em vez de redirecionar automaticamente
-      await Swal.fire({
-        title: "Erro!",
-        text: errorMessage,
-        icon: "error",
-        confirmButtonColor: "#d32f2f",
+    } catch (error) {
+      console.error("Erro ao buscar matrículas:", error);
+      setMatriculasAluno([]);
+      setSnackbar({
+        open: true,
+        message: "Erro ao buscar cursos do aluno",
+        severity: "error",
       });
-      if (error.response?.status === 401 || error.message === 'Token não encontrado') {
-        localStorage.removeItem('auth_token');
-        localStorage.removeItem('user');
+    } finally {
+      setLoadingMatriculas(false);
+    }
+  };
+
+  const handleAbrirCertificado = (usuario: IUsuario) => {
+    setAlunoSelecionado(usuario);
+    buscarMatriculasAluno(usuario.id);
+    setCertificadoForm({
+      dataConclusao: new Date().toISOString().split("T")[0],
+      cargaHoraria: 0,
+      urlCertificado: "",
+      dataEmissao: new Date().toISOString().split("T")[0],
+      cursoAlunoId: 0,
+    });
+    setCertificadoOpen(true);
+  };
+
+  const handleFecharCertificado = () => {
+    setCertificadoOpen(false);
+    setAlunoSelecionado(null);
+    setMatriculasAluno([]);
+    setCertificadoForm({
+      dataConclusao: new Date().toISOString().split("T")[0],
+      cargaHoraria: 0,
+      urlCertificado: "",
+      dataEmissao: new Date().toISOString().split("T")[0],
+      cursoAlunoId: 0,
+    });
+  };
+
+  const handleEmitirCertificado = async () => {
+    try {
+      // Validação básica
+      if (!certificadoForm.cursoAlunoId) {
+        setSnackbar({
+          open: true,
+          message: "Selecione um curso",
+          severity: "warning",
+        });
+        return;
+      }
+
+      if (!certificadoForm.dataConclusao || !certificadoForm.dataEmissao) {
+        setSnackbar({
+          open: true,
+          message: "Preencha as datas",
+          severity: "warning",
+        });
+        return;
+      }
+       const response = await api.post(
+                        "/Cursos/cadastrar-certificado", 
+                        {
+                            dataConclusao: certificadoForm.dataConclusao,
+                            cargaHoraria: certificadoForm.cargaHoraria,
+                            urlCertificado: certificadoForm.urlCertificado,
+                            dataEmissao: certificadoForm.dataEmissao,
+                            cursoAlunoId: certificadoForm.cursoAlunoId
+                        }
+                        );
+
+        if (response.data.success) {
+          await Swal.fire({
+            title: "Sucesso!",
+            text: "Certificado emitido com sucesso",
+            icon: "success",
+            confirmButtonColor: "#1976d2",
+            timer: 2000,
+          });
+
+          handleFecharCertificado();
+
+          setSnackbar({
+            open: true,
+            message: "Certificado emitido com sucesso",
+            severity: "success",
+          });
+        }
+    } catch (error: any) {
+      console.error("Erro ao emitir certificado:", error);
+
+      let errorMessage = "Erro ao emitir certificado";
+      if (error.response?.status === 400) {
+        errorMessage = error.response.data?.message || "Dados inválidos";
+      } else if (error.response?.status === 409) {
+        errorMessage = "Este aluno já possui certificado para este curso";
+      }
+
+      setSnackbar({
+        open: true,
+        message: errorMessage,
+        severity: "error",
+      });
+    }
+  };
+
+  const handleDeleteClick = async (usuario: IUsuario) => {
+    if (usuario.tipo === 1) {
+      Swal.fire({
+        title: "Operação não permitida",
+        text: "Não é possível excluir usuários administradores.",
+        icon: "warning",
+        confirmButtonColor: "#1976d2",
+      });
+      return;
+    }
+
+    const result = await Swal.fire({
+      title: "Tem certeza?",
+      text: `Você está prestes a excluir o usuário "${usuario.nomeCompleto}". Esta ação não pode ser desfeita!`,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d32f2f",
+      cancelButtonColor: "#757575",
+      confirmButtonText: "Sim, excluir!",
+      cancelButtonText: "Cancelar",
+      reverseButtons: true,
+    });
+
+    if (result.isConfirmed) {
+      try {
+        const token = localStorage.getItem("auth_token");
+        if (!token) {
+          throw new Error("Token não encontrado");
+        }
+        await api.delete(`/usuarios/${usuario.id}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        await Swal.fire({
+          title: "Excluído!",
+          text: `O usuário "${usuario.nomeCompleto}" foi excluído com sucesso.`,
+          icon: "success",
+          confirmButtonColor: "#1976d2",
+          timer: 2000,
+        });
+
+        buscarUsuarios();
+      } catch (error: any) {
+        let errorMessage = "Erro ao excluir usuário";
+        if (error.response?.status === 401) {
+          errorMessage = "Sessão expirada. Faça login novamente.";
+        } else if (error.response?.status === 403) {
+          errorMessage = "Você não tem permissão para excluir usuários.";
+        } else if (error.response?.status === 400) {
+          errorMessage =
+            error.response?.data?.message ||
+            "Não é possível excluir este usuário pois há registros associados";
+        } else if (error.message === "Token não encontrado") {
+          errorMessage = "Sessão expirada. Faça login novamente.";
+        }
+
+        // Use Swal para mostrar o erro em vez de redirecionar automaticamente
+        await Swal.fire({
+          title: "Erro!",
+          text: errorMessage,
+          icon: "error",
+          confirmButtonColor: "#d32f2f",
+        });
+        if (
+          error.response?.status === 401 ||
+          error.message === "Token não encontrado"
+        ) {
+          localStorage.removeItem("auth_token");
+          localStorage.removeItem("user");
+        }
       }
     }
-  }
-};
+  };
 
   const handleToggleStatus = async (usuario: IUsuario) => {
     const novoStatus = !usuario.ativo;
@@ -280,12 +460,14 @@ const AlunosAdminPage: React.FC = () => {
 
     if (result.isConfirmed) {
       try {
-        await api.patch(`/usuarios/${usuario.id}/status`, { ativo: novoStatus });
-        
+        await api.patch(`/usuarios/${usuario.id}/status`, {
+          ativo: novoStatus,
+        });
+
         setUsuarios(
           usuarios.map((u) =>
-            u.id === usuario.id ? { ...u, ativo: novoStatus } : u
-          )
+            u.id === usuario.id ? { ...u, ativo: novoStatus } : u,
+          ),
         );
 
         setSnackbar({
@@ -321,7 +503,7 @@ const AlunosAdminPage: React.FC = () => {
     if (!birthDate) return "N/A";
     const today = dayjs();
     const birth = dayjs(birthDate);
-    return today.diff(birth, 'year');
+    return today.diff(birth, "year");
   };
 
   const getTipoInfo = (tipo: number) => {
@@ -330,9 +512,14 @@ const AlunosAdminPage: React.FC = () => {
         return {
           label: "Aluno",
           icon: <PersonOutline fontSize="small" />,
-          color: "primary" as "primary" | "error" | "warning" | "success" | "info",
+          color: "primary" as
+            | "primary"
+            | "error"
+            | "warning"
+            | "success"
+            | "info",
           bgColor: "#e3f2fd",
-          textColor: "#1976d2"
+          textColor: "#1976d2",
         };
       case 1:
         return {
@@ -340,7 +527,7 @@ const AlunosAdminPage: React.FC = () => {
           icon: <AdminPanelSettings fontSize="small" />,
           color: "error" as const,
           bgColor: "#ffebee",
-          textColor: "#d32f2f"
+          textColor: "#d32f2f",
         };
       default:
         return {
@@ -348,20 +535,20 @@ const AlunosAdminPage: React.FC = () => {
           icon: <Warning fontSize="small" />,
           color: "default" as const,
           bgColor: "#f5f5f5",
-          textColor: "#757575"
+          textColor: "#757575",
         };
     }
   };
 
   const getEnderecoPrincipal = (enderecos: EnderecoResponse[]) => {
-    return enderecos.find(endereco => endereco.isPrincipal) || enderecos[0];
+    return enderecos.find((endereco) => endereco.isPrincipal) || enderecos[0];
   };
 
-  const totalAlunos = usuarios.filter(u => u.tipo === 0).length;
-  const totalAdmins = usuarios.filter(u => u.tipo === 1).length;
-  const usuariosAtivos = usuarios.filter(u => u.ativo).length;
-  const novosHoje = usuarios.filter(u => 
-    dayjs(u.dataCadastro).isSame(dayjs(), 'day')
+  const totalAlunos = usuarios.filter((u) => u.tipo === 0).length;
+  const totalAdmins = usuarios.filter((u) => u.tipo === 1).length;
+  const usuariosAtivos = usuarios.filter((u) => u.ativo).length;
+  const novosHoje = usuarios.filter((u) =>
+    dayjs(u.dataCadastro).isSame(dayjs(), "day"),
   ).length;
 
   return (
@@ -439,7 +626,7 @@ const AlunosAdminPage: React.FC = () => {
                 {totalAlunos}
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                {usuarios.filter(u => u.tipo === 0 && u.ativo).length} ativos
+                {usuarios.filter((u) => u.tipo === 0 && u.ativo).length} ativos
               </Typography>
             </CardContent>
           </Card>
@@ -454,6 +641,21 @@ const AlunosAdminPage: React.FC = () => {
               </Typography>
               <Typography variant="body2" color="text.secondary">
                 Sistema
+              </Typography>
+            </CardContent>
+          </Card>
+
+          <Card sx={{ flex: "1 1 200px", minWidth: 200 }}>
+            <CardContent>
+              <Typography color="text.secondary" gutterBottom>
+                <CardMembership sx={{ verticalAlign: "middle", mr: 1 }} />
+                Certificados
+              </Typography>
+              <Typography variant="h4" color="success.main">
+                {usuarios.filter((u) => u.tipo === 0).length}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Alunos para certificar
               </Typography>
             </CardContent>
           </Card>
@@ -489,7 +691,9 @@ const AlunosAdminPage: React.FC = () => {
                 <Select
                   value={filterTipo.toString()}
                   label="Tipo"
-                  onChange={(e: SelectChangeEvent) => setFilterTipo(e.target.value as any)}
+                  onChange={(e: SelectChangeEvent) =>
+                    setFilterTipo(e.target.value as any)
+                  }
                 >
                   <MenuItem value="todos">Todos</MenuItem>
                   <MenuItem value={0}>Alunos</MenuItem>
@@ -502,7 +706,9 @@ const AlunosAdminPage: React.FC = () => {
                 <Select
                   value={filterStatus}
                   label="Status"
-                  onChange={(e: SelectChangeEvent) => setFilterStatus(e.target.value as any)}
+                  onChange={(e: SelectChangeEvent) =>
+                    setFilterStatus(e.target.value as any)
+                  }
                 >
                   <MenuItem value="todos">Todos</MenuItem>
                   <MenuItem value="ativo">Ativos</MenuItem>
@@ -515,7 +721,9 @@ const AlunosAdminPage: React.FC = () => {
                 <Select
                   value={filterOrder}
                   label="Ordenar por"
-                  onChange={(e: SelectChangeEvent) => setFilterOrder(e.target.value as any)}
+                  onChange={(e: SelectChangeEvent) =>
+                    setFilterOrder(e.target.value as any)
+                  }
                 >
                   <MenuItem value="nome">Nome</MenuItem>
                   <MenuItem value="dataCadastro">Data de Cadastro</MenuItem>
@@ -574,7 +782,8 @@ const AlunosAdminPage: React.FC = () => {
           >
             <Typography variant="body2" color="text.secondary">
               {filteredUsuarios.length} usuários encontrados
-              {totalPaginas > 1 && ` (Página ${paginaAtual} de ${totalPaginas})`}
+              {totalPaginas > 1 &&
+                ` (Página ${paginaAtual} de ${totalPaginas})`}
             </Typography>
           </Box>
         </Paper>
@@ -606,7 +815,9 @@ const AlunosAdminPage: React.FC = () => {
               Nenhum usuário encontrado
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              {searchTerm ? "Tente outra busca" : "Cadastre seu primeiro usuário"}
+              {searchTerm
+                ? "Tente outra busca"
+                : "Cadastre seu primeiro usuário"}
             </Typography>
           </Paper>
         ) : (
@@ -628,18 +839,26 @@ const AlunosAdminPage: React.FC = () => {
                 <TableBody>
                   {usuariosPaginaAtual.map((usuario) => {
                     const tipoInfo = getTipoInfo(usuario.tipo);
-                    const enderecoPrincipal = getEnderecoPrincipal(usuario.enderecos);
-                    
+                    const enderecoPrincipal = getEnderecoPrincipal(
+                      usuario.enderecos,
+                    );
+
                     return (
                       <TableRow key={usuario.id} hover>
                         <TableCell>
-                          <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                          <Box
+                            sx={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 2,
+                            }}
+                          >
                             <Avatar
-                              sx={{ 
-                                width: 50, 
+                              sx={{
+                                width: 50,
                                 height: 50,
                                 bgcolor: tipoInfo.bgColor,
-                                color: tipoInfo.textColor
+                                color: tipoInfo.textColor,
                               }}
                             >
                               {usuario.nomeCompleto.charAt(0).toUpperCase()}
@@ -648,11 +867,18 @@ const AlunosAdminPage: React.FC = () => {
                               <Typography variant="subtitle2" fontWeight="bold">
                                 {usuario.nomeCompleto}
                               </Typography>
-                              <Typography variant="caption" color="text.secondary">
+                              <Typography
+                                variant="caption"
+                                color="text.secondary"
+                              >
                                 {usuario.cpf || "Sem CPF"}
                               </Typography>
                               {usuario.tipo === 0 && usuario.matricula && (
-                                <Typography variant="caption" color="text.secondary" display="block">
+                                <Typography
+                                  variant="caption"
+                                  color="text.secondary"
+                                  display="block"
+                                >
                                   Matrícula: {usuario.matricula}
                                 </Typography>
                               )}
@@ -670,18 +896,30 @@ const AlunosAdminPage: React.FC = () => {
                         <TableCell>
                           <Stack spacing={0.5}>
                             <Typography variant="body2">
-                              <Email fontSize="small" sx={{ verticalAlign: 'middle', mr: 1 }} />
+                              <Email
+                                fontSize="small"
+                                sx={{ verticalAlign: "middle", mr: 1 }}
+                              />
                               {usuario.email}
                             </Typography>
                             {usuario.telefone && (
                               <Typography variant="body2">
-                                <Phone fontSize="small" sx={{ verticalAlign: 'middle', mr: 1 }} />
+                                <Phone
+                                  fontSize="small"
+                                  sx={{ verticalAlign: "middle", mr: 1 }}
+                                />
                                 {usuario.telefone}
                               </Typography>
                             )}
                             {usuario.dataNascimento && (
-                              <Typography variant="caption" color="text.secondary">
-                                <CalendarToday fontSize="small" sx={{ verticalAlign: 'middle', mr: 0.5 }} />
+                              <Typography
+                                variant="caption"
+                                color="text.secondary"
+                              >
+                                <CalendarToday
+                                  fontSize="small"
+                                  sx={{ verticalAlign: "middle", mr: 0.5 }}
+                                />
                                 {calculateAge(usuario.dataNascimento)} anos
                               </Typography>
                             )}
@@ -691,11 +929,19 @@ const AlunosAdminPage: React.FC = () => {
                           {enderecoPrincipal ? (
                             <Box>
                               <Typography variant="body2" noWrap>
-                                <LocationOn fontSize="small" sx={{ verticalAlign: 'middle', mr: 0.5 }} />
-                                {enderecoPrincipal.cidade}, {enderecoPrincipal.estado}
+                                <LocationOn
+                                  fontSize="small"
+                                  sx={{ verticalAlign: "middle", mr: 0.5 }}
+                                />
+                                {enderecoPrincipal.cidade},{" "}
+                                {enderecoPrincipal.estado}
                               </Typography>
-                              <Typography variant="caption" color="text.secondary">
-                                {enderecoPrincipal.logradouro}, {enderecoPrincipal.numero}
+                              <Typography
+                                variant="caption"
+                                color="text.secondary"
+                              >
+                                {enderecoPrincipal.logradouro},{" "}
+                                {enderecoPrincipal.numero}
                               </Typography>
                               {enderecoPrincipal.isPrincipal && (
                                 <Chip
@@ -726,7 +972,10 @@ const AlunosAdminPage: React.FC = () => {
                               <Typography variant="body2">
                                 {formatDateTime(usuario.ultimoLogin)}
                               </Typography>
-                              <Typography variant="caption" color="text.secondary">
+                              <Typography
+                                variant="caption"
+                                color="text.secondary"
+                              >
                                 {dayjs(usuario.ultimoLogin).fromNow()}
                               </Typography>
                             </>
@@ -750,7 +999,13 @@ const AlunosAdminPage: React.FC = () => {
                           />
                         </TableCell>
                         <TableCell align="center">
-                          <Box sx={{ display: "flex", gap: 1, justifyContent: "center" }}>
+                          <Box
+                            sx={{
+                              display: "flex",
+                              gap: 1,
+                              justifyContent: "center",
+                            }}
+                          >
                             <Tooltip title="Visualizar">
                               <IconButton
                                 size="small"
@@ -760,16 +1015,31 @@ const AlunosAdminPage: React.FC = () => {
                                 <Visibility fontSize="small" />
                               </IconButton>
                             </Tooltip>
+
                             {usuario.tipo === 0 && (
-                              <Tooltip title="Excluir">
-                                <IconButton
-                                  size="small"
-                                  color="error"
-                                  onClick={() => handleDeleteClick(usuario)}
-                                >
-                                  <Delete fontSize="small" />
-                                </IconButton>
-                              </Tooltip>
+                              <>
+                                <Tooltip title="Emitir Certificado">
+                                  <IconButton
+                                    size="small"
+                                    color="success"
+                                    onClick={() =>
+                                      handleAbrirCertificado(usuario)
+                                    }
+                                  >
+                                    <CardMembership fontSize="small" />
+                                  </IconButton>
+                                </Tooltip>
+
+                                <Tooltip title="Excluir">
+                                  <IconButton
+                                    size="small"
+                                    color="error"
+                                    onClick={() => handleDeleteClick(usuario)}
+                                  >
+                                    <Delete fontSize="small" />
+                                  </IconButton>
+                                </Tooltip>
+                              </>
                             )}
                           </Box>
                         </TableCell>
@@ -829,29 +1099,32 @@ const AlunosAdminPage: React.FC = () => {
         {usuarioDetalhes && (
           <>
             <DialogTitle>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
                 <Avatar
-                  sx={{ 
-                    width: 60, 
+                  sx={{
+                    width: 60,
                     height: 60,
                     bgcolor: getTipoInfo(usuarioDetalhes.tipo).bgColor,
-                    color: getTipoInfo(usuarioDetalhes.tipo).textColor
+                    color: getTipoInfo(usuarioDetalhes.tipo).textColor,
                   }}
                 >
                   {usuarioDetalhes.nomeCompleto.charAt(0).toUpperCase()}
                 </Avatar>
                 <Box>
-                  <Typography variant="h5">{usuarioDetalhes.nomeCompleto}</Typography>
+                  <Typography variant="h5">
+                    {usuarioDetalhes.nomeCompleto}
+                  </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    {getTipoInfo(usuarioDetalhes.tipo).label} • {usuarioDetalhes.cpf || "Sem CPF"}
+                    {getTipoInfo(usuarioDetalhes.tipo).label} •{" "}
+                    {usuarioDetalhes.cpf || "Sem CPF"}
                   </Typography>
                 </Box>
               </Box>
             </DialogTitle>
             <DialogContent dividers>
-              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
+              <Box sx={{ display: "flex", flexWrap: "wrap", gap: 3 }}>
                 {/* Informações Pessoais */}
-                <Box sx={{ flex: '1 1 300px' }}>
+                <Box sx={{ flex: "1 1 300px" }}>
                   <Typography variant="h6" gutterBottom color="primary">
                     Informações Pessoais
                   </Typography>
@@ -890,25 +1163,27 @@ const AlunosAdminPage: React.FC = () => {
                           Data de Nascimento
                         </Typography>
                         <Typography variant="body1">
-                          {formatDate(usuarioDetalhes.dataNascimento)} ({calculateAge(usuarioDetalhes.dataNascimento)} anos)
+                          {formatDate(usuarioDetalhes.dataNascimento)} (
+                          {calculateAge(usuarioDetalhes.dataNascimento)} anos)
                         </Typography>
                       </Box>
                     )}
-                    {usuarioDetalhes.tipo === 0 && usuarioDetalhes.matricula && (
-                      <Box>
-                        <Typography variant="body2" color="text.secondary">
-                          Matrícula
-                        </Typography>
-                        <Typography variant="body1">
-                          {usuarioDetalhes.matricula}
-                        </Typography>
-                      </Box>
-                    )}
+                    {usuarioDetalhes.tipo === 0 &&
+                      usuarioDetalhes.matricula && (
+                        <Box>
+                          <Typography variant="body2" color="text.secondary">
+                            Matrícula
+                          </Typography>
+                          <Typography variant="body1">
+                            {usuarioDetalhes.matricula}
+                          </Typography>
+                        </Box>
+                      )}
                   </Stack>
                 </Box>
 
                 {/* Informações do Sistema */}
-                <Box sx={{ flex: '1 1 300px' }}>
+                <Box sx={{ flex: "1 1 300px" }}>
                   <Typography variant="h6" gutterBottom color="primary">
                     Informações do Sistema
                   </Typography>
@@ -936,7 +1211,9 @@ const AlunosAdminPage: React.FC = () => {
                         Último Login
                       </Typography>
                       <Typography variant="body1">
-                        {usuarioDetalhes.ultimoLogin ? formatDateTime(usuarioDetalhes.ultimoLogin) : "Nunca"}
+                        {usuarioDetalhes.ultimoLogin
+                          ? formatDateTime(usuarioDetalhes.ultimoLogin)
+                          : "Nunca"}
                       </Typography>
                     </Box>
                     <Box>
@@ -946,7 +1223,9 @@ const AlunosAdminPage: React.FC = () => {
                       <Chip
                         label={usuarioDetalhes.ativo ? "Ativo" : "Inativo"}
                         color={usuarioDetalhes.ativo ? "success" : "default"}
-                        icon={usuarioDetalhes.ativo ? <CheckCircle /> : <Block />}
+                        icon={
+                          usuarioDetalhes.ativo ? <CheckCircle /> : <Block />
+                        }
                       />
                     </Box>
                   </Stack>
@@ -954,19 +1233,19 @@ const AlunosAdminPage: React.FC = () => {
 
                 {/* Endereços */}
                 {usuarioDetalhes.enderecos.length > 0 && (
-                  <Box sx={{ width: '100%' }}>
+                  <Box sx={{ width: "100%" }}>
                     <Typography variant="h6" gutterBottom color="primary">
                       Endereços
                     </Typography>
-                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
+                    <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2 }}>
                       {usuarioDetalhes.enderecos.map((endereco, index) => (
-                        <Paper 
-                          key={endereco.id} 
-                          variant="outlined" 
-                          sx={{ 
-                            p: 2, 
-                            flex: '1 1 300px',
-                            minWidth: 300 
+                        <Paper
+                          key={endereco.id}
+                          variant="outlined"
+                          sx={{
+                            p: 2,
+                            flex: "1 1 300px",
+                            minWidth: 300,
                           }}
                         >
                           <Box>
@@ -983,7 +1262,8 @@ const AlunosAdminPage: React.FC = () => {
                             </Typography>
                             <Typography variant="body2">
                               {endereco.logradouro}, {endereco.numero}
-                              {endereco.complemento && `, ${endereco.complemento}`}
+                              {endereco.complemento &&
+                                `, ${endereco.complemento}`}
                             </Typography>
                             <Typography variant="body2">
                               {endereco.bairro}
@@ -1007,6 +1287,262 @@ const AlunosAdminPage: React.FC = () => {
             </DialogActions>
           </>
         )}
+      </Dialog>
+
+      {/* Modal de Emissão de Certificado */}
+      <Dialog
+        open={certificadoOpen}
+        onClose={handleFecharCertificado}
+        maxWidth="md"
+        fullWidth
+         sx={{
+    '& .MuiDialog-container': {
+      // O SweetAlert2 usa z-index: 1060, então nosso modal precisa ter z-index menor
+      zIndex: 1050
+    }
+  }}
+      >
+        <DialogTitle>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+            <CardMembership color="success" />
+            <Typography variant="h6">Emitir Certificado</Typography>
+          </Box>
+          <Typography variant="body2" color="text.secondary">
+            Para: {alunoSelecionado?.nomeCompleto}
+          </Typography>
+        </DialogTitle>
+
+        <DialogContent dividers>
+          {loadingMatriculas ? (
+            <Box sx={{ display: "flex", justifyContent: "center", p: 4 }}>
+              <CircularProgress />
+            </Box>
+          ) : (
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
+              {/* Seleção do Curso */}
+              <Box>
+                <FormControl fullWidth required>
+                  <InputLabel>Selecione o Curso</InputLabel>
+                  <Select
+                    value={certificadoForm.cursoAlunoId || ""}
+                    label="Selecione o Curso"
+                    onChange={(e) =>
+                      setCertificadoForm({
+                        ...certificadoForm,
+                        cursoAlunoId: Number(e.target.value),
+                      })
+                    }
+                    disabled={matriculasAluno.length === 0}
+                  >
+                    <MenuItem value="" disabled>
+                      Selecione um curso
+                    </MenuItem>
+                    {matriculasAluno.map((matricula) => (
+                      <MenuItem key={matricula.id} value={matricula.id}>
+                        <Box>
+                          <Typography variant="body1">
+                            {matricula.cursoNome}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            Matrícula: {formatDate(matricula.dataMatricula)} •
+                            Progresso: {matricula.progresso}% • Status:{" "}
+                            {matricula.status}
+                          </Typography>
+                        </Box>
+                      </MenuItem>
+                    ))}
+                  </Select>
+                  {matriculasAluno.length === 0 && (
+                    <FormHelperText>
+                      Este aluno não possui cursos matriculados
+                    </FormHelperText>
+                  )}
+                </FormControl>
+              </Box>
+
+              {/* Datas e Carga Horária em linha */}
+              <Box
+                sx={{
+                  display: "flex",
+                  flexDirection: { xs: "column", sm: "row" },
+                  gap: 3,
+                  alignItems: { xs: "stretch", sm: "flex-start" },
+                }}
+              >
+                {/* Data de Conclusão */}
+                <Box sx={{ flex: 1, width: "100%" }}>
+                  <TextField
+                    fullWidth
+                    label="Data de Conclusão"
+                    type="date"
+                    value={certificadoForm.dataConclusao}
+                    onChange={(e) =>
+                      setCertificadoForm({
+                        ...certificadoForm,
+                        dataConclusao: e.target.value,
+                      })
+                    }
+                    InputLabelProps={{
+                      shrink: true,
+                    }}
+                    required
+                  />
+                </Box>
+
+                {/* Data de Emissão */}
+                <Box sx={{ flex: 1, width: "100%" }}>
+                  <TextField
+                    fullWidth
+                    label="Data de Emissão"
+                    type="date"
+                    value={certificadoForm.dataEmissao}
+                    onChange={(e) =>
+                      setCertificadoForm({
+                        ...certificadoForm,
+                        dataEmissao: e.target.value,
+                      })
+                    }
+                    InputLabelProps={{
+                      shrink: true,
+                    }}
+                    required
+                  />
+                </Box>
+
+                {/* Carga Horária */}
+                <Box sx={{ flex: 1, width: "100%" }}>
+                  <TextField
+                    fullWidth
+                    label="Carga Horária (horas)"
+                    type="number"
+                    value={certificadoForm.cargaHoraria || ""}
+                    onChange={(e) =>
+                      setCertificadoForm({
+                        ...certificadoForm,
+                        cargaHoraria: Number(e.target.value),
+                      })
+                    }
+                    InputProps={{
+                      endAdornment: (
+                        <InputAdornment position="end">h</InputAdornment>
+                      ),
+                    }}
+                    required
+                  />
+                </Box>
+              </Box>
+
+              {/* URL do Certificado */}
+              <Box>
+                <Typography
+                  variant="subtitle2"
+                  gutterBottom
+                  color="text.secondary"
+                >
+                  URL do Certificado
+                </Typography>
+                <Box sx={{ display: "flex", gap: 2, alignItems: "flex-start" }}>
+                  <TextField
+                    fullWidth
+                    value={certificadoForm.urlCertificado}
+                    onChange={(e) =>
+                      setCertificadoForm({
+                        ...certificadoForm,
+                        urlCertificado: e.target.value,
+                      })
+                    }
+                    placeholder="https://exemplo.com/certificado.pdf"
+                    helperText="URL pública para download do certificado"
+                  />
+                </Box>
+              </Box>
+
+              {/* Informações do Aluno */}
+              <Paper variant="outlined" sx={{ p: 2, bgcolor: "action.hover" }}>
+                <Typography variant="subtitle2" gutterBottom color="primary">
+                  <Person sx={{ verticalAlign: "middle", mr: 1 }} />
+                  Informações do Aluno
+                </Typography>
+                <Box
+                  sx={{
+                    display: "flex",
+                    flexDirection: { xs: "column", sm: "row" },
+                    flexWrap: "wrap",
+                    gap: 2,
+                  }}
+                >
+                  <Box sx={{ flex: 1, minWidth: 200 }}>
+                    <Typography variant="body2">
+                      <strong>Nome:</strong> {alunoSelecionado?.nomeCompleto}
+                    </Typography>
+                  </Box>
+                  <Box sx={{ flex: 1, minWidth: 200 }}>
+                    <Typography variant="body2">
+                      <strong>Email:</strong> {alunoSelecionado?.email}
+                    </Typography>
+                  </Box>
+                  <Box sx={{ flex: 1, minWidth: 200 }}>
+                    <Typography variant="body2">
+                      <strong>CPF:</strong>{" "}
+                      {alunoSelecionado?.cpf || "Não informado"}
+                    </Typography>
+                  </Box>
+                  <Box sx={{ flex: 1, minWidth: 200 }}>
+                    <Typography variant="body2">
+                      <strong>Status:</strong>{" "}
+                      {alunoSelecionado?.ativo ? "Ativo" : "Inativo"}
+                    </Typography>
+                  </Box>
+                </Box>
+              </Paper>
+
+              {/* Curso Selecionado */}
+              {certificadoForm.cursoAlunoId > 0 && (
+                <Paper
+                  variant="outlined"
+                  sx={{ p: 2, bgcolor: "success.light" }}
+                >
+                  <Typography
+                    variant="subtitle2"
+                    gutterBottom
+                    color="success.dark"
+                  >
+                    <School sx={{ verticalAlign: "middle", mr: 1 }} />
+                    Curso Selecionado
+                  </Typography>
+                  <Typography variant="body2">
+                    {
+                      matriculasAluno.find(
+                        (m) => m.id === certificadoForm.cursoAlunoId,
+                      )?.cursoNome
+                    }
+                  </Typography>
+                  <Typography
+                    variant="caption"
+                    color="success.dark"
+                    display="block"
+                    sx={{ mt: 1 }}
+                  >
+                    ID da Matrícula: {certificadoForm.cursoAlunoId}
+                  </Typography>
+                </Paper>
+              )}
+            </Box>
+          )}
+        </DialogContent>
+
+        <DialogActions>
+          <Button onClick={handleFecharCertificado}>Cancelar</Button>
+          <Button
+            variant="contained"
+            color="success"
+            startIcon={<CardMembership />}
+            onClick={handleEmitirCertificado}
+            disabled={!certificadoForm.cursoAlunoId || loadingMatriculas}
+          >
+            Emitir Certificado
+          </Button>
+        </DialogActions>
       </Dialog>
 
       {/* Snackbar para feedback */}
