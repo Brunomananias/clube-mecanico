@@ -28,6 +28,7 @@ import {
   Alert,
   Pagination,
   Stack,
+  Checkbox,
 } from "@mui/material";
 import {
   Search,
@@ -82,6 +83,11 @@ const TurmasAdminPage: React.FC = () => {
     "todos" | "ativa" | "inativa"
   >("todos");
   const [loading, setLoading] = useState(true);
+  
+  // Estados para seleção múltipla
+  const [selectedTurmas, setSelectedTurmas] = useState<number[]>([]);
+  const [selectAll, setSelectAll] = useState(false);
+  const [isDeletingMultiple, setIsDeletingMultiple] = useState(false);
   
   // Estados para paginação
   const [paginaAtual, setPaginaAtual] = useState(1);
@@ -165,6 +171,10 @@ const TurmasAdminPage: React.FC = () => {
 
     setFilteredTurmas(resultado);
     setPaginaAtual(1); // Reseta para primeira página ao filtrar
+    
+    // Limpar seleção quando filtrar
+    setSelectedTurmas([]);
+    setSelectAll(false);
   }, [searchTerm, filterStatus, turmas]);
 
   // Cálculos para paginação
@@ -182,6 +192,126 @@ const TurmasAdminPage: React.FC = () => {
   const formatarData = (data: string) => {
     return new Date(data).toLocaleDateString("pt-BR");
   };
+
+  // Funções para seleção múltipla
+  const handleSelectAll = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (event.target.checked) {
+      const allTurmaIds = filteredTurmas.map(turma => turma.id);
+      setSelectedTurmas(allTurmaIds);
+      setSelectAll(true);
+    } else {
+      setSelectedTurmas([]);
+      setSelectAll(false);
+    }
+  };
+
+  const handleSelectTurma = (event: React.ChangeEvent<HTMLInputElement>, turmaId: number) => {
+    const checked = event.target.checked;
+    
+    if (checked) {
+      setSelectedTurmas(prev => [...prev, turmaId]);
+    } else {
+      setSelectedTurmas(prev => prev.filter(id => id !== turmaId));
+    }
+  };
+
+  const handleClearSelection = () => {
+    setSelectedTurmas([]);
+    setSelectAll(false);
+  };
+
+  const handleDeleteMultiple = async () => {
+  const result = await Swal.fire({
+    title: "Tem certeza?",
+    html: `
+      <div style="text-align: left;">
+        <p>Você está prestes a excluir <strong>${selectedTurmas.length}</strong> turma(s).</p>
+        <p>Esta ação não pode ser desfeita!</p>
+      </div>
+    `,
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonColor: "#d32f2f",
+    cancelButtonColor: "#757575",
+    confirmButtonText: `Sim, excluir ${selectedTurmas.length} turma(s)!`,
+    cancelButtonText: "Cancelar",
+    reverseButtons: true,
+  });
+
+  if (result.isConfirmed) {
+    try {
+      setIsDeletingMultiple(true);
+      
+      // Array para armazenar resultados
+      const resultados: Array<{id: number, success: boolean, message?: string}> = [];
+      
+      // Deletar uma por uma (em série para melhor controle)
+      for (const id of selectedTurmas) {
+        try {
+          await api.delete(`/turmas/${id}`);
+          resultados.push({ id, success: true });
+        } catch (error: any) {
+          resultados.push({ 
+            id, 
+            success: false, 
+            message: error.response?.data?.message || "Erro ao excluir" 
+          });
+        }
+      }
+      
+      // Contar sucessos e falhas
+      const successes = resultados.filter(r => r.success);
+      const failures = resultados.filter(r => !r.success);
+      
+      if (failures.length === 0) {
+        Swal.fire({
+          title: "Sucesso!",
+          text: `${successes.length} turma(s) excluída(s) com sucesso.`,
+          icon: "success",
+          confirmButtonColor: "#1976d2",
+          timer: 2000,
+        });
+      } else if (successes.length > 0) {
+        Swal.fire({
+          title: "Parcialmente concluído",
+          html: `
+            <div style="text-align: left;">
+              <p><strong>✅ ${successes.length}</strong> turma(s) excluída(s) com sucesso.</p>
+              <p><strong>❌ ${failures.length}</strong> turma(s) não puderam ser excluídas.</p>
+              <p style="font-size: 12px; color: #666; margin-top: 10px;">
+                Algumas turmas podem ter alunos matriculados.
+              </p>
+            </div>
+          `,
+          icon: "info",
+          confirmButtonColor: "#1976d2",
+        });
+      } else {
+        Swal.fire({
+          title: "Erro!",
+          text: "Nenhuma turma pôde ser excluída. Verifique se há alunos matriculados.",
+          icon: "error",
+          confirmButtonColor: "#d32f2f",
+        });
+      }
+
+      // Recarregar turmas e limpar seleção
+      buscarTurmas();
+      handleClearSelection();
+
+    } catch (error) {
+      console.error("Erro ao excluir múltiplas turmas:", error);
+      Swal.fire({
+        title: "Erro!",
+        text: "Ocorreu um erro ao tentar excluir as turmas.",
+        icon: "error",
+        confirmButtonColor: "#d32f2f",
+      });
+    } finally {
+      setIsDeletingMultiple(false);
+    }
+  }
+};
 
   const abrirModalEdicao = (turma: ITurma) => {
     setTurmaEditando(turma);
@@ -440,6 +570,56 @@ const TurmasAdminPage: React.FC = () => {
             </Box>
           </Paper>
 
+          {/* Barra de ações para múltipla seleção */}
+          {selectedTurmas.length > 0 && (
+            <Paper sx={{ 
+              p: 2, 
+              mb: 3, 
+              bgcolor: 'primary.light',
+              display: 'flex', 
+              justifyContent: 'space-between', 
+              alignItems: 'center'
+            }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                <Checkbox
+                  checked={selectAll}
+                  onChange={handleSelectAll}
+                  color="primary"
+                />
+                <Typography variant="body1" fontWeight="medium">
+                  {selectedTurmas.length} turma(s) selecionada(s)
+                </Typography>
+              </Box>
+              
+              <Box sx={{ display: 'flex', gap: 1 }}>
+                <Button
+                  variant="contained"
+                  color="error"
+                  startIcon={<Delete />}
+                  onClick={handleDeleteMultiple}
+                  disabled={isDeletingMultiple}
+                  size="small"
+                >
+                  {isDeletingMultiple ? (
+                    <>
+                      <CircularProgress size={16} sx={{ mr: 1 }} />
+                      Excluindo...
+                    </>
+                  ) : (
+                    `Excluir (${selectedTurmas.length})`
+                  )}
+                </Button>
+                <Button
+                  variant="outlined"
+                  onClick={handleClearSelection}
+                  size="small"
+                >
+                  Limpar seleção
+                </Button>
+              </Box>
+            </Paper>
+          )}
+
           {/* Contador e Info de Paginação */}
           <Box sx={{ 
             display: 'flex', 
@@ -490,6 +670,14 @@ const TurmasAdminPage: React.FC = () => {
                 <Table>
                   <TableHead>
                     <TableRow sx={{ bgcolor: "primary.light" }}>
+                      <TableCell padding="checkbox">
+                        <Checkbox
+                          indeterminate={selectedTurmas.length > 0 && selectedTurmas.length < filteredTurmas.length}
+                          checked={selectAll}
+                          onChange={handleSelectAll}
+                          color="primary"
+                        />
+                      </TableCell>
                       <TableCell>Curso</TableCell>
                       <TableCell>Data/Horário</TableCell>
                       <TableCell>Professor</TableCell>
@@ -500,8 +688,21 @@ const TurmasAdminPage: React.FC = () => {
                   </TableHead>
                   <TableBody>
                     {turmasPaginaAtual.map((turma) => {
+                      const isSelected = selectedTurmas.includes(turma.id);
+                      
                       return (
-                        <TableRow key={turma.id} hover>
+                        <TableRow 
+                          key={turma.id} 
+                          hover
+                          selected={isSelected}
+                        >
+                          <TableCell padding="checkbox">
+                            <Checkbox
+                              checked={isSelected}
+                              onChange={(event) => handleSelectTurma(event, turma.id)}
+                              color="primary"
+                            />
+                          </TableCell>
                           <TableCell>
                             <Box>
                               <Typography variant="subtitle2" fontWeight="bold">
